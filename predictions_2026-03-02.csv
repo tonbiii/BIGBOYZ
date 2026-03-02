@@ -1,0 +1,12 @@
+timestamp,median_return,bullish_signal,bearish_signal,open_trades,action,flipped,executed,lot_size,entry_price,paused,flip_consecutive,pause_flips,roc
+2026-03-02T13:23:37.220702Z,1.28e-05,False,True,0,,False,False,0.0,0.0,False,2,False,0.2737317775094089
+2026-03-02T13:25:42.643753Z,5.7e-06,False,True,0,,False,False,0.0,0.0,False,2,False,-0.4948243540270837
+2026-03-02T13:27:00.562468Z,-5.7e-06,False,True,0,,False,False,0.0,0.0,False,2,False,-0.527044577323418
+2026-03-02T13:28:24.529566Z,-1.5e-05,False,False,0,SELL,False,True,0.3,5400.549,False,0,False,-0.448363814691501
+2026-03-02T13:29:56.005105Z,-1.92e-05,False,True,1,,False,False,0.0,0.0,False,0,False,-0.3701633645718767
+2026-03-02T13:33:32.467442Z,-2.27e-05,False,True,0,BUY,True,True,0.3,5406.822,False,1,False,-0.3758335251063094
+2026-03-02T13:37:13.574546Z,-3.19e-05,False,False,0,,False,False,0.0,0.0,False,1,False,-0.5247385668993532
+2026-03-02T13:40:55.847272Z,-3.28e-05,False,False,0,,False,False,0.0,0.0,False,1,False,-0.3353935696306775
+2026-03-02T13:45:07.626135Z,-2.99e-05,False,True,0,SELL,False,True,0.3,5392.461,False,0,False,-0.0612294894066547
+2026-03-02T13:49:08.832314Z,-1.62e-05,False,False,0,BUY,True,True,0.3,5395.754,False,0,False,0.5736588169219169
+2026-03-02T13:52:32.118700Z,2e-07,False,False,1,None,False,False,0.0,0.0,False,0,False,0.5006907775955859

@@ -1,0 +1,2359 @@
+<!-- templates/marketing_dashboard.html -->
+<!-- FIXED: No flickering, instant updates, smooth transitions -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Huggingtrade Algo - Performance Showcase</title>
+    <!-- Favicon - Multiple sizes for better compatibility -->
+    <link rel="icon" type="image/jpeg" href="/logo.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg">
+    <link rel="apple-touch-icon" href="/logo.jpg">
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #0f0f0f;
+            --bg-hover: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #808080;
+            --accent: #ffffff;
+            --border: rgba(255,255,255,0.1);
+            --border-light: rgba(255,255,255,0.05);
+            --shadow: 0 4px 20px rgba(0,0,0,0.5);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.7);
+            --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --profit-green: #10B981;
+            --loss-red: #EF4444;
+            --buy-color: #3B82F6;
+            --sell-color: #EC4899;
+            --neon-glow: 0 0 10px rgba(255,255,255,0.3), 0 0 20px rgba(255,255,255,0.1);
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        /* FIXED: Smooth value transitions without flickering */
+        .metric-value,
+        .perf-value {
+            transition: color 0.3s ease !important;
+        }
+        
+        /* Live update indicator */
+        .live-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1001;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--profit-green);
+            animation: pulse 2s infinite;
+        }
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 280px;
+            background: var(--bg-secondary);
+            padding: 2rem 0;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            border-right: 1px solid var(--border);
+            transition: transform 0.3s ease;
+        }
+        .sidebar-header {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .logo-container {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1rem;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+        .last-update {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .sidebar nav {
+            padding: 1rem 0;
+        }
+        .sidebar ul {
+            list-style: none;
+        }
+        .sidebar li {
+            margin-bottom: 0.25rem;
+        }
+        .sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1.5rem;
+            transition: var(--transition);
+            position: relative;
+        }
+        .sidebar a::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: var(--transition);
+        }
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .sidebar a:hover::before,
+        .sidebar a.active::before {
+            transform: scaleY(1);
+        }
+        .sidebar-icon {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+        /* Mobile Menu */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            z-index: 999;
+            align-items: center;
+            padding: 0 1rem;
+        }
+        .hamburger {
+            display: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        .mobile-logo {
+            display: flex;
+            align-items: center;
+            margin-left: 1rem;
+        }
+        .mobile-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin-right: 0.5rem;
+        }
+        .mobile-logo span {
+            font-weight: 600;
+        }
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            padding: 3rem 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: slideIn 0.6s ease;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .header-logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+        /* Section Styles */
+        .section {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        .section.active {
+            display: block;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+        /* Performance Summary Cards */
+        .perf-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .perf-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+        }
+        .perf-card:hover {
+            background: var(--bg-card);
+            border-color: var(--border);
+            transform: translateY(-2px);
+        }
+        .perf-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .perf-value {
+            font-size: 1.8rem;
+            font-weight: 300;
+        }
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 3rem;
+        }
+        .metric-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .metric-card:hover {
+            background: var(--bg-card);
+            border-color: var(--border);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+        .metric-subtext {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+        /* Charts Container */
+        .charts-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        .chart-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            min-height: 400px;
+        }
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+        .chart-canvas {
+            position: relative;
+            height: 320px;
+        }
+        canvas {
+            max-height: 100% !important;
+        }
+        /* Full Width Chart */
+        .chart-full {
+            grid-column: 1 / -1;
+        }
+        /* Table Styles */
+        .table-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        th {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+        }
+        tbody tr {
+            transition: var(--transition);
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+        .profit-green {
+            color: var(--profit-green);
+            font-weight: 500;
+        }
+        .loss-red {
+            color: var(--loss-red);
+            font-weight: 500;
+        }
+        /* Login Details */
+        .login-details {
+            display: grid;
+            gap: 1.5rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .detail-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+        }
+        .detail-card:hover {
+            background: var(--bg-card);
+            border-color: var(--border);
+        }
+        .detail-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            min-width: 100px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .detail-value {
+            flex: 1;
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .copy-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        /* MyFXBook Section */
+        .myfxbook-section {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        .myfxbook-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .myfxbook-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: var(--bg-card);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+        }
+        .myfxbook-icon svg {
+            width: 40px;
+            height: 40px;
+            stroke: var(--text-primary);
+            fill: none;
+            stroke-width: 2;
+        }
+        .myfxbook-title {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+        }
+        .myfxbook-description {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .myfxbook-btn {
+            display: inline-block;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.1rem;
+            padding: 1.25rem 3rem;
+            background: var(--glass-bg);
+            border-radius: 50px;
+            border: 2px solid var(--glass-border);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        .myfxbook-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .myfxbook-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .myfxbook-btn:hover {
+            border-color: var(--accent);
+            box-shadow: var(--neon-glow);
+            transform: translateY(-2px);
+        }
+        .myfxbook-btn span {
+            position: relative;
+            z-index: 1;
+        }
+        /* Error Display - Enhanced */
+        .error-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 3rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 2px solid var(--loss-red);
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+        .error-title {
+            color: var(--loss-red);
+            font-size: 1.8rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+        }
+        .error-details {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            text-align: left;
+            border-left: 4px solid var(--loss-red);
+        }
+        .error-details strong {
+            color: var(--loss-red);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .error-details p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+        .error-status {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: left;
+        }
+        .error-status strong {
+            color: var(--text-primary);
+        }
+        .error-traceback {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            text-align: left;
+            border-left: 4px solid #FFA500;
+        }
+        .error-traceback strong {
+            color: #FFA500;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .error-traceback pre {
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .error-troubleshooting {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+            border-left: 4px solid var(--profit-green);
+        }
+        .error-troubleshooting h3 {
+            color: var(--profit-green);
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-bottom: 1rem;
+        }
+        .error-troubleshooting ol {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+        .error-troubleshooting li {
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .error-btn {
+            padding: 1rem 2rem;
+            background: var(--loss-red);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+            display: inline-block;
+        }
+        .error-btn:hover {
+            background: #DC2626;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .error-btn-secondary {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+        }
+        .error-btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+        }
+        /* Loading Indicator */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .charts-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+            .hamburger {
+                display: block;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 1.5rem 1rem;
+                margin-top: 60px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .header {
+                margin-bottom: 2.5rem;
+                padding-bottom: 2rem;
+            }
+            .header-logo {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 1rem;
+            }
+            .section-title {
+                font-size: 1.5rem;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+            .metric-card {
+                padding: 1.25rem;
+            }
+            .metric-value {
+                font-size: 1.5rem;
+            }
+            .charts-wrapper {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .chart-container {
+                padding: 1.5rem;
+                min-height: 300px;
+            }
+            .chart-canvas {
+                height: 250px;
+            }
+            .perf-summary {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            .perf-card {
+                padding: 1.25rem;
+            }
+            .perf-value {
+                font-size: 1.5rem;
+            }
+            th, td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.85rem;
+            }
+            .detail-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .copy-btn {
+                width: 100%;
+            }
+            .live-indicator {
+                top: 70px;
+                right: 10px;
+                font-size: 0.75rem;
+                padding: 0.4rem 0.8rem;
+            }
+            /* Error container mobile styles */
+            .error-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            .error-icon {
+                font-size: 3rem;
+            }
+            .error-title {
+                font-size: 1.4rem;
+            }
+            .error-actions {
+                flex-direction: column;
+            }
+            .error-btn {
+                width: 100%;
+            }
+        }
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            .perf-summary {
+                grid-template-columns: 1fr;
+            }
+            .myfxbook-btn {
+                padding: 1rem 2rem;
+                font-size: 1rem;
+            }
+        }
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Live update indicator (always shows "Live") -->
+    <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span>Live</span>
+    </div>
+  
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="mobile-logo">
+            <img src="/logo.jpg" alt="Huggingtrade">
+            <span>Huggingtrade</span>
+        </div>
+    </div>
+  
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <img src="/logo.jpg" alt="Huggingtrade Logo">
+            </div>
+            <div class="brand-name">Huggingtrade</div>
+            <div class="last-update" id="lastUpdate">Updated: {{ last_update }}</div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" data-target="dashboard" class="active">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    </span> Dashboard
+                </a></li>
+                <li><a href="#" data-target="account-overview">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </span> Account Overview
+                </a></li>
+                <li><a href="#" data-target="mt5-details">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </span> MT5 Login
+                </a></li>
+                <li><a href="#" data-target="open-positions">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M3 12h4l3 9 4-18 3 9h4"/></svg>
+                    </span> Open Positions
+                </a></li>
+                <li><a href="#" data-target="performance-metrics">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    </span> Performance
+                </a></li>
+                <li><a href="#" data-target="risk-analysis">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span> Risk Analysis
+                </a></li>
+                <li><a href="#" data-target="time-analysis">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span> Time Analysis
+                </a></li>
+                <li><a href="#" data-target="charts">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    </span> Charts
+                </a></li>
+                <li><a href="#" data-target="distributions">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </span> Distributions
+                </a></li>
+                <li><a href="#" data-target="symbol-performance">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </span> Symbols
+                </a></li>
+                <li><a href="#" data-target="recent-trades">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </span> Recent Trades
+                </a></li>
+                <li><a href="#" data-target="myfxbook">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </span> MyFXBook
+                </a></li>
+                <li><a href="/dashboard">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    </span> My Dashboard
+                </a></li>
+                <li><a href="/logout">
+                    <span class="sidebar-icon">
+                        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    </span> Logout
+                </a></li>
+            </ul>
+        </nav>
+    </nav>
+  
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <div class="header-logo">
+                    <img src="/logo.jpg" alt="Huggingtrade Logo">
+                </div>
+                <h1>Huggingtrade Algo Performance</h1>
+                <p>Real-time trading analytics and insights</p>
+            </div>
+          
+            {% if data.error %}
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <h2 class="error-title">{{ data.error }}</h2>
+                  
+                    {% if data.error_details %}
+                        <div class="error-details">
+                            <strong>Error Details:</strong>
+                            <p>{{ data.error_details }}</p>
+                        </div>
+                    {% endif %}
+                  
+                    {% if data.connection_status %}
+                        <div class="error-status">
+                            <strong>Connection Status:</strong> {{ data.connection_status }}
+                        </div>
+                    {% endif %}
+                  
+                    {% if data.error_traceback %}
+                        <div class="error-traceback">
+                            <strong>Error Traceback:</strong>
+                            <pre>{% for line in data.error_traceback %}{{ line }}
+{% endfor %}</pre>
+                        </div>
+                    {% endif %}
+                  
+                    {% if data.troubleshooting %}
+                        <div class="error-troubleshooting">
+                            <h3>Troubleshooting Steps:</h3>
+                            <ol>
+                                {% for step in data.troubleshooting %}
+                                    <li>{{ step }}</li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                    {% endif %}
+                  
+                    <div class="error-actions">
+                        <a href="/dashboard" class="error-btn">Go to Dashboard</a>
+                        <button onclick="location.reload()" class="error-btn error-btn-secondary">Retry Connection</button>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Dashboard Section -->
+                <section class="section active" id="dashboard">
+                    <h2 class="section-title">Dashboard Overview</h2>
+       
+                    <!-- Performance Summary -->
+                    <div class="perf-summary">
+                        <div class="perf-card">
+                            <div class="perf-label">Today PNL</div>
+                            <div class="perf-value {% if data.performance_summary.today_pnl > 0 %}profit-green{% elif data.performance_summary.today_pnl < 0 %}loss-red{% endif %}" 
+                                 data-field="today_pnl" 
+                                 data-value="{{ data.performance_summary.today_pnl }}"
+                                 data-prefix="$">
+                                ${{ data.performance_summary.today_pnl | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">Today %</div>
+                            <div class="perf-value {% if data.performance_summary.today_pct > 0 %}profit-green{% elif data.performance_summary.today_pct < 0 %}loss-red{% endif %}" 
+                                 data-field="today_pct"
+                                 data-value="{{ data.performance_summary.today_pct }}"
+                                 data-suffix="%">
+                                {{ data.performance_summary.today_pct }}%
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">This Week PNL</div>
+                            <div class="perf-value {% if data.performance_summary.this_week_pnl > 0 %}profit-green{% elif data.performance_summary.this_week_pnl < 0 %}loss-red{% endif %}" 
+                                 data-field="this_week_pnl"
+                                 data-value="{{ data.performance_summary.this_week_pnl }}"
+                                 data-prefix="$">
+                                ${{ data.performance_summary.this_week_pnl | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">This Week %</div>
+                            <div class="perf-value {% if data.performance_summary.this_week_pct > 0 %}profit-green{% elif data.performance_summary.this_week_pct < 0 %}loss-red{% endif %}" 
+                                 data-field="this_week_pct"
+                                 data-value="{{ data.performance_summary.this_week_pct }}"
+                                 data-suffix="%">
+                                {{ data.performance_summary.this_week_pct }}%
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">This Month PNL</div>
+                            <div class="perf-value {% if data.performance_summary.this_month_pnl > 0 %}profit-green{% elif data.performance_summary.this_month_pnl < 0 %}loss-red{% endif %}" 
+                                 data-field="this_month_pnl"
+                                 data-value="{{ data.performance_summary.this_month_pnl }}"
+                                 data-prefix="$">
+                                ${{ data.performance_summary.this_month_pnl | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">This Month %</div>
+                            <div class="perf-value {% if data.performance_summary.this_month_pct > 0 %}profit-green{% elif data.performance_summary.this_month_pct < 0 %}loss-red{% endif %}" 
+                                 data-field="this_month_pct"
+                                 data-value="{{ data.performance_summary.this_month_pct }}"
+                                 data-suffix="%">
+                                {{ data.performance_summary.this_month_pct }}%
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">Avg Daily PNL</div>
+                            <div class="perf-value {% if data.performance_summary.avg_daily_pnl > 0 %}profit-green{% elif data.performance_summary.avg_daily_pnl < 0 %}loss-red{% endif %}" 
+                                 data-field="avg_daily_pnl"
+                                 data-value="{{ data.performance_summary.avg_daily_pnl }}"
+                                 data-prefix="$">
+                                ${{ data.performance_summary.avg_daily_pnl | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-label">Avg Daily %</div>
+                            <div class="perf-value {% if data.performance_summary.avg_daily_pct > 0 %}profit-green{% elif data.performance_summary.avg_daily_pct < 0 %}loss-red{% endif %}" 
+                                 data-field="avg_daily_pct"
+                                 data-value="{{ data.performance_summary.avg_daily_pct }}"
+                                 data-suffix="%">
+                                {{ data.performance_summary.avg_daily_pct }}%
+                            </div>
+                        </div>
+                    </div>
+                  
+                    <!-- Key Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Balance</div>
+                            <div class="metric-value" data-field="balance" data-value="{{ data.metrics.balance }}" data-prefix="$">${{ data.metrics.balance | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Equity</div>
+                            <div class="metric-value" data-field="equity" data-value="{{ data.metrics.equity }}" data-prefix="$">${{ data.metrics.equity | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Profit</div>
+                            <div class="metric-value {% if data.metrics.total_profit > 0 %}profit-green{% elif data.metrics.total_profit < 0 %}loss-red{% endif %}" data-field="total_profit" data-value="{{ data.metrics.total_profit }}" data-prefix="$">
+                                ${{ data.metrics.total_profit | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">ROI</div>
+                            <div class="metric-value {% if data.metrics.roi > 0 %}profit-green{% elif data.metrics.roi < 0 %}loss-red{% endif %}" data-field="roi" data-value="{{ data.metrics.roi }}" data-suffix="%">
+                                {{ data.metrics.roi }}%
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Win Rate</div>
+                            <div class="metric-value" data-field="win_rate" data-value="{{ data.metrics.win_rate }}" data-suffix="%">{{ data.metrics.win_rate }}%</div>
+                            <div class="metric-subtext">{{ data.metrics.wins }}/{{ data.metrics.total_trades }} trades</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Profit Factor</div>
+                            <div class="metric-value" data-field="profit_factor" data-value="{{ data.metrics.profit_factor }}">{{ data.metrics.profit_factor | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max Drawdown</div>
+                            <div class="metric-value loss-red" data-field="max_drawdown" data-value="{{ data.metrics.max_drawdown }}" data-suffix="%">{{ data.metrics.max_drawdown }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Sharpe Ratio</div>
+                            <div class="metric-value" data-field="sharpe_ratio" data-value="{{ data.metrics.sharpe_ratio }}">{{ data.metrics.sharpe_ratio | number_format(2) }}</div>
+                        </div>
+                    </div>
+                  
+                    <!-- Main Charts -->
+                    <div class="charts-wrapper">
+                        <div class="chart-container chart-full">
+                            <div class="chart-title">Equity Curve</div>
+                            <div class="chart-canvas">
+                                <canvas id="dashboardEquityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Monthly Returns</div>
+                            <div class="chart-canvas">
+                                <canvas id="dashboardMonthlyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Symbol Distribution</div>
+                            <div class="chart-canvas">
+                                <canvas id="dashboardSymbolChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Account Overview Section -->
+                <section class="section" id="account-overview">
+                    <h2 class="section-title">Account Overview</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Balance</div>
+                            <div class="metric-value" data-field="balance" data-value="{{ data.metrics.balance }}" data-prefix="$">${{ data.metrics.balance | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Equity</div>
+                            <div class="metric-value" data-field="equity" data-value="{{ data.metrics.equity }}" data-prefix="$">${{ data.metrics.equity | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Margin Used</div>
+                            <div class="metric-value" data-field="margin" data-value="{{ data.metrics.margin }}" data-prefix="$">${{ data.metrics.margin | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Free Margin</div>
+                            <div class="metric-value" data-field="margin_free" data-value="{{ data.metrics.margin_free }}" data-prefix="$">${{ data.metrics.margin_free | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Margin Level</div>
+                            <div class="metric-value" data-field="margin_level" data-value="{{ data.metrics.margin_level }}" data-suffix="%">{{ data.metrics.margin_level }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Open P/L</div>
+                            <div class="metric-value {% if data.metrics.open_profit > 0 %}profit-green{% elif data.metrics.open_profit < 0 %}loss-red{% endif %}" data-field="open_profit" data-value="{{ data.metrics.open_profit }}" data-prefix="$">
+                                ${{ data.metrics.open_profit | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Open Trades</div>
+                            <div class="metric-value" data-field="open_trades_count" data-value="{{ data.metrics.open_trades_count }}">{{ data.metrics.open_trades_count }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Deposits</div>
+                            <div class="metric-value" data-field="total_deposits" data-value="{{ data.metrics.total_deposits }}" data-prefix="$">${{ data.metrics.total_deposits | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Withdrawals</div>
+                            <div class="metric-value" data-field="total_withdrawals" data-value="{{ data.metrics.total_withdrawals }}" data-prefix="$">${{ data.metrics.total_withdrawals | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Net Deposits</div>
+                            <div class="metric-value" data-field="net_deposits" data-value="{{ data.metrics.net_deposits }}" data-prefix="$">${{ data.metrics.net_deposits | number_format(2) }}</div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- MT5 Details Section -->
+                <section class="section" id="mt5-details">
+                    <h2 class="section-title">MT5 Login Details</h2>
+                    <div class="login-details">
+                        <div class="detail-card">
+                            <span class="detail-label">Login:</span>
+                            <span class="detail-value" id="login-value">{{ mt5_details.account }}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('login-value', this)">Copy</button>
+                        </div>
+                        <div class="detail-card">
+                            <span class="detail-label">Server:</span>
+                            <span class="detail-value" id="server-value">{{ mt5_details.server }}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('server-value', this)">Copy</button>
+                        </div>
+                        <div class="detail-card">
+                            <span class="detail-label">Password:</span>
+                            <span class="detail-value" id="password-value">{{ mt5_details.password }}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('password-value', this)">Copy</button>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Open Positions Section -->
+                <section class="section" id="open-positions">
+                    <h2 class="section-title">Open Positions (<span data-field="open_trades_count" data-value="{{ data.metrics.open_trades_count }}">{{ data.metrics.open_trades_count }}</span>)</h2>
+                    <div class="table-container">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Type</th>
+                                        <th>Volume</th>
+                                        <th>Open Price</th>
+                                        <th>Current Price</th>
+                                        <th>Profit</th>
+                                        <th>Swap</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="openPositionsTableBody">
+                                    {% if data.open_positions %}
+                                        {% for pos in data.open_positions %}
+                                            <tr>
+                                                <td><strong>{{ pos.symbol }}</strong></td>
+                                                <td>{{ pos.type }}</td>
+                                                <td>{{ pos.volume | number_format(2) }}</td>
+                                                <td>{{ pos.open_price | number_format(5) }}</td>
+                                                <td>{{ pos.current_price | number_format(5) }}</td>
+                                                <td class="{% if pos.profit > 0 %}profit-green{% elif pos.profit < 0 %}loss-red{% endif %}">
+                                                    ${{ pos.profit | number_format(2) }}
+                                                </td>
+                                                <td class="{% if pos.swap > 0 %}profit-green{% elif pos.swap < 0 %}loss-red{% endif %}">
+                                                    ${{ pos.swap | number_format(2) }}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: var(--text-muted);">
+                                                No open positions
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+<!-- Performance Metrics Section -->
+                <section class="section" id="performance-metrics">
+                    <h2 class="section-title">Performance Metrics</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Net Profit</div>
+                            <div class="metric-value {% if data.metrics.total_profit > 0 %}profit-green{% elif data.metrics.total_profit < 0 %}loss-red{% endif %}" data-field="total_profit" data-value="{{ data.metrics.total_profit }}" data-prefix="$">
+                                ${{ data.metrics.total_profit | number_format(2) }}
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">ROI</div>
+                            <div class="metric-value {% if data.metrics.roi > 0 %}profit-green{% elif data.metrics.roi < 0 %}loss-red{% endif %}" data-field="roi" data-value="{{ data.metrics.roi }}" data-suffix="%">
+                                {{ data.metrics.roi }}%
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Win Rate</div>
+                            <div class="metric-value" data-field="win_rate" data-value="{{ data.metrics.win_rate }}" data-suffix="%">{{ data.metrics.win_rate }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Trades</div>
+                            <div class="metric-value" data-field="total_trades" data-value="{{ data.metrics.total_trades }}">{{ data.metrics.total_trades }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Winning Trades</div>
+                            <div class="metric-value profit-green" data-field="wins" data-value="{{ data.metrics.wins }}">{{ data.metrics.wins }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Losing Trades</div>
+                            <div class="metric-value loss-red" data-field="losses" data-value="{{ data.metrics.losses }}">{{ data.metrics.losses }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Average Win</div>
+                            <div class="metric-value profit-green" data-field="avg_win" data-value="{{ data.metrics.avg_win }}" data-prefix="$">${{ data.metrics.avg_win | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Average Loss</div>
+                            <div class="metric-value loss-red" data-field="avg_loss" data-value="{{ data.metrics.avg_loss }}" data-prefix="$">${{ data.metrics.avg_loss | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Profit Factor</div>
+                            <div class="metric-value" data-field="profit_factor" data-value="{{ data.metrics.profit_factor }}">{{ data.metrics.profit_factor | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Expectancy</div>
+                            <div class="metric-value" data-field="expectancy" data-value="{{ data.metrics.expectancy }}" data-prefix="$">${{ data.metrics.expectancy | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Pips</div>
+                            <div class="metric-value" data-field="total_pips" data-value="{{ data.metrics.total_pips }}">{{ data.metrics.total_pips | number_format(1) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Avg Volume</div>
+                            <div class="metric-value" data-field="avg_volume" data-value="{{ data.metrics.avg_volume }}">{{ data.metrics.avg_volume | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Trades/Month</div>
+                            <div class="metric-value" data-field="trades_per_month" data-value="{{ data.metrics.trades_per_month }}">{{ data.metrics.trades_per_month | number_format(1) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Trades/Week</div>
+                            <div class="metric-value" data-field="trades_per_week" data-value="{{ data.metrics.trades_per_week }}">{{ data.metrics.trades_per_week | number_format(1) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Commissions</div>
+                            <div class="metric-value loss-red" data-field="total_commissions" data-value="{{ data.metrics.total_commissions }}" data-prefix="$">${{ data.metrics.total_commissions | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Swaps</div>
+                            <div class="metric-value {% if data.metrics.total_swaps > 0 %}profit-green{% elif data.metrics.total_swaps < 0 %}loss-red{% endif %}" data-field="total_swaps" data-value="{{ data.metrics.total_swaps }}" data-prefix="$">
+                                ${{ data.metrics.total_swaps | number_format(2) }}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Risk Analysis Section -->
+                <section class="section" id="risk-analysis">
+                    <h2 class="section-title">Risk Analysis</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Max Drawdown</div>
+                            <div class="metric-value loss-red" data-field="max_drawdown" data-value="{{ data.metrics.max_drawdown }}" data-suffix="%">{{ data.metrics.max_drawdown }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max DD Duration</div>
+                            <div class="metric-value" data-field="max_dd_duration" data-value="{{ data.metrics.max_dd_duration }}">{{ data.metrics.max_dd_duration }} days</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Sharpe Ratio</div>
+                            <div class="metric-value" data-field="sharpe_ratio" data-value="{{ data.metrics.sharpe_ratio }}">{{ data.metrics.sharpe_ratio | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Sortino Ratio</div>
+                            <div class="metric-value" data-field="sortino_ratio" data-value="{{ data.metrics.sortino_ratio }}">{{ data.metrics.sortino_ratio | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Ulcer Index</div>
+                            <div class="metric-value" data-field="ulcer_index" data-value="{{ data.metrics.ulcer_index }}">{{ data.metrics.ulcer_index | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Recovery Factor</div>
+                            <div class="metric-value" data-field="recovery_factor" data-value="{{ data.metrics.recovery_factor }}">{{ data.metrics.recovery_factor | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">R/R Ratio</div>
+                            <div class="metric-value" data-field="rr_ratio" data-value="{{ data.metrics.rr_ratio }}">{{ data.metrics.rr_ratio | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Avg Duration</div>
+                            <div class="metric-value" data-field="avg_duration" data-value="{{ data.metrics.avg_duration }}">{{ data.metrics.avg_duration | number_format(0) }}s</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Best Trade</div>
+                            <div class="metric-value profit-green" data-field="best_trade" data-value="{{ data.metrics.best_trade }}" data-prefix="$">${{ data.metrics.best_trade | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Worst Trade</div>
+                            <div class="metric-value loss-red" data-field="worst_trade" data-value="{{ data.metrics.worst_trade }}" data-prefix="$">${{ data.metrics.worst_trade | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max Win Streak</div>
+                            <div class="metric-value profit-green" data-field="max_win_streak" data-value="{{ data.metrics.max_win_streak }}">{{ data.metrics.max_win_streak }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max Loss Streak</div>
+                            <div class="metric-value loss-red" data-field="max_loss_streak" data-value="{{ data.metrics.max_loss_streak }}">{{ data.metrics.max_loss_streak }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Skewness</div>
+                            <div class="metric-value" data-field="skewness" data-value="{{ data.metrics.skewness }}">{{ data.metrics.skewness | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Kurtosis</div>
+                            <div class="metric-value" data-field="kurtosis" data-value="{{ data.metrics.kurtosis }}">{{ data.metrics.kurtosis | number_format(2) }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">95% VaR</div>
+                            <div class="metric-value loss-red" data-field="var_95" data-value="{{ data.metrics.var_95 }}" data-prefix="$">${{ data.metrics.var_95 | number_format(2) }}</div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Time Analysis Section -->
+                <section class="section" id="time-analysis">
+                    <h2 class="section-title">Time-Based Analysis</h2>
+                    <div class="charts-wrapper">
+                        <div class="chart-container">
+                            <div class="chart-title">Performance by Day of Week</div>
+                            <div class="chart-canvas">
+                                <canvas id="dayOfWeekChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Performance by Hour</div>
+                            <div class="chart-canvas">
+                                <canvas id="hourOfDayChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Performance by Session</div>
+                            <div class="chart-canvas">
+                                <canvas id="sessionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Charts Section -->
+                <section class="section" id="charts">
+                    <h2 class="section-title">Performance Charts</h2>
+                    <div class="charts-wrapper">
+                        <div class="chart-container chart-full">
+                            <div class="chart-title">Equity Curve</div>
+                            <div class="chart-canvas">
+                                <canvas id="equityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container chart-full">
+                            <div class="chart-title">Drawdown</div>
+                            <div class="chart-canvas">
+                                <canvas id="drawdownChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Monthly Returns</div>
+                            <div class="chart-canvas">
+                                <canvas id="monthlyReturnsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Distributions Section -->
+                <section class="section" id="distributions">
+                    <h2 class="section-title">Distributions</h2>
+                    <div class="charts-wrapper">
+                        <div class="chart-container">
+                            <div class="chart-title">Profit Distribution</div>
+                            <div class="chart-canvas">
+                                <canvas id="profitHistogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Duration Distribution</div>
+                            <div class="chart-canvas">
+                                <canvas id="durationHistogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Trade Distribution by Symbol</div>
+                            <div class="chart-canvas">
+                                <canvas id="symbolPie"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Trade Type Distribution</div>
+                            <div class="chart-canvas">
+                                <canvas id="tradeTypePie"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Symbol Performance Section -->
+                <section class="section" id="symbol-performance">
+                    <h2 class="section-title">Symbol Performance</h2>
+                    <div class="table-container">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Trades</th>
+                                        <th>Net Profit</th>
+                                        <th>Win Rate</th>
+                                        <th>Total Pips</th>
+                                        <th>Avg Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in data.symbol_stats %}
+                                        <tr>
+                                            <td><strong>{{ stat.symbol }}</strong></td>
+                                            <td>{{ stat.count }}</td>
+                                            <td class="{% if stat.pnl > 0 %}profit-green{% elif stat.pnl < 0 %}loss-red{% endif %}">
+                                                ${{ stat.pnl | number_format(2) }}
+                                            </td>
+                                            <td>{{ stat.win_rate | number_format(1) }}%</td>
+                                            <td>{{ stat.pips | number_format(1) }}</td>
+                                            <td>{{ stat.avg_volume | number_format(2) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- Recent Trades Section -->
+                <section class="section" id="recent-trades">
+                    <h2 class="section-title">Recent Trades (Last 30)</h2>
+                    <div class="table-container">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Type</th>
+                                        <th>Open Time</th>
+                                        <th>Close Time</th>
+                                        <th>Profit</th>
+                                        <th>Duration (s)</th>
+                                        <th>Pips</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trade in data.recent_trades %}
+                                        <tr>
+                                            <td><strong>{{ trade.symbol }}</strong></td>
+                                            <td>{{ trade.type }}</td>
+                                            <td>{{ trade.open_time | datetime_format }}</td>
+                                            <td>{{ trade.close_time | datetime_format }}</td>
+                                            <td class="{% if trade.profit > 0 %}profit-green{% elif trade.profit < 0 %}loss-red{% endif %}">
+                                                ${{ trade.profit | number_format(2) }}
+                                            </td>
+                                            <td>{{ trade.duration | number_format(0) }}</td>
+                                            <td>{{ trade.pips | number_format(1) }}</td>
+                                            <td>{{ trade.volume | number_format(2) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- MyFXBook Section -->
+                <section class="section" id="myfxbook">
+                    <div class="myfxbook-section">
+                        <div class="myfxbook-container">
+                            <div class="myfxbook-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15 3 21 3 21 9"/>
+                                    <line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                            </div>
+                            <h2 class="myfxbook-title">View Full Analytics on MyFXBook</h2>
+                            <p class="myfxbook-description">
+                                Access comprehensive trading analytics, detailed performance metrics, and verified trading history on MyFXBook.
+                                Get deeper insights into trading patterns, risk metrics, and historical performance data.
+                            </p>
+                            <a href="{{ myfxbook_link }}" target="_blank" rel="noopener noreferrer" class="myfxbook-btn">
+                                <span>Open MyFXBook Account →</span>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+              
+                <!-- JSON Data -->
+                <script id="equity-data" type="application/json">{{ data.equity_data | tojson }}</script>
+                <script id="drawdown-data" type="application/json">{{ data.drawdown_data | tojson }}</script>
+                <script id="monthly-returns-data" type="application/json">{{ data.monthly_returns | tojson }}</script>
+                <script id="day-of-week-data" type="application/json">{{ data.day_of_week_pnl | tojson }}</script>
+                <script id="hour-of-day-data" type="application/json">{{ data.hour_of_day_pnl | tojson }}</script>
+                <script id="session-data" type="application/json">{{ data.session_pnl | tojson }}</script>
+                <script id="profit-hist-data" type="application/json">{{ data.profit_hist | tojson }}</script>
+                <script id="duration-hist-data" type="application/json">{{ data.duration_hist | tojson }}</script>
+                <script id="symbol-pie-data" type="application/json">{{ data.symbol_pie | tojson }}</script>
+                <script id="trade-type-data" type="application/json">{{ data.trade_type_stats | tojson }}</script>
+                <script id="initial-account-id" type="application/json">{{ data.account_id | tojson }}</script>
+            {% endif %}
+        </div>
+    </div>
+  
+    <script>
+        // Mobile menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            sidebar.classList.toggle('active');
+        });
+      
+        // Navigation
+        const navLinks = document.querySelectorAll('.sidebar a');
+        const sections = document.querySelectorAll('.section');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetId = link.getAttribute('data-target');
+                if (targetId) {
+                    e.preventDefault();
+                    // Update active states
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    // Show target section
+                    sections.forEach(sec => sec.classList.remove('active'));
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                    // Close mobile menu
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                        hamburger.classList.remove('active');
+                    }
+                }
+            });
+        });
+      
+        // Copy to clipboard
+        function copyToClipboard(elementId, buttonElement) {
+            const text = document.getElementById(elementId).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-999999px';
+            textarea.style.top = '-999999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    const originalText = buttonElement.innerText;
+                    buttonElement.innerText = 'Copied!';
+                    buttonElement.style.borderColor = 'var(--profit-green)';
+                    buttonElement.style.color = 'var(--profit-green)';
+                    setTimeout(() => {
+                        buttonElement.innerText = originalText;
+                        buttonElement.style.borderColor = '';
+                        buttonElement.style.color = '';
+                    }, 2000);
+                } else {
+                    alert('Failed to copy to clipboard. Please copy manually.');
+                }
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard. Please copy manually.');
+            }
+            document.body.removeChild(textarea);
+        }
+      
+        // Chart.js default configuration
+        Chart.defaults.color = '#b0b0b0';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      
+        // Helper function to create line chart
+        function createLineChart(ctx, labels, data, label, color, fill = true) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: fill ? color.replace('1)', '0.1)') : 'transparent',
+                        borderWidth: 2,
+                        fill: fill,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#b0b0b0', padding: 15 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            padding: 12,
+                            titleColor: '#ffffff',
+                            bodyColor: '#b0b0b0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#808080', maxRotation: 45 },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            ticks: { color: '#808080' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+      
+        // Helper function to create bar chart
+        function createBarChart(ctx, labels, data, label, backgroundColors) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 0,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            padding: 12,
+                            titleColor: '#ffffff',
+                            bodyColor: '#b0b0b0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#808080', maxRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#808080' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+      
+        // Helper function to create pie/doughnut chart
+        function createPieChart(ctx, labels, data, type = 'doughnut') {
+            const colors = [
+                'rgba(255,255,255,0.9)',
+                'rgba(200,200,200,0.9)',
+                'rgba(160,160,160,0.9)',
+                'rgba(120,120,120,0.9)',
+                'rgba(80,80,80,0.9)',
+                'rgba(40,40,40,0.9)'
+            ];
+            return new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, data.length),
+                        borderWidth: 2,
+                        borderColor: '#000000'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#b0b0b0',
+                                padding: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            padding: 12,
+                            titleColor: '#ffffff',
+                            bodyColor: '#b0b0b0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    }
+                }
+            });
+        }
+      
+        // Helper function for trade type pie chart with distinct colors
+        function createTradeTypePie(ctx, labels, data) {
+            const buyColor = 'rgba(59, 130, 246, 0.9)';
+            const sellColor = 'rgba(236, 72, 153, 0.9)';
+            const colors = labels.map(label =>
+                label === 'Buy' ? buyColor : sellColor
+            );
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#000000'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#b0b0b0',
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            padding: 12,
+                            titleColor: '#ffffff',
+                            bodyColor: '#b0b0b0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    }
+                }
+            });
+        }
+      
+        // Initialize all charts
+        function initCharts() {
+            if (!document.getElementById('equity-data')) return;
+          
+            // Dashboard Equity Chart
+            const dashEquityDataElem = document.getElementById('equity-data');
+            const dashEquityData = dashEquityDataElem ? JSON.parse(dashEquityDataElem.textContent) : null;
+            if (dashEquityData && dashEquityData.length > 0) {
+                const dashEquityCtx = document.getElementById('dashboardEquityChart').getContext('2d');
+                const dashEquityLabels = dashEquityData.map(row => row.date);
+                const dashEquityValues = dashEquityData.map(row => row.equity);
+                createLineChart(dashEquityCtx, dashEquityLabels, dashEquityValues, 'Equity', 'rgba(255,255,255,0.9)');
+            }
+          
+            // Dashboard Monthly Chart
+            const monthlyDataElem = document.getElementById('monthly-returns-data');
+            const monthlyData = monthlyDataElem ? JSON.parse(monthlyDataElem.textContent) : null;
+            if (monthlyData && monthlyData.length > 0) {
+                const dashMonthlyCtx = document.getElementById('dashboardMonthlyChart').getContext('2d');
+                const dashMonthlyLabels = monthlyData.map(row => row.month);
+                const dashMonthlyValues = monthlyData.map(row => row.pnl);
+                const dashMonthlyColors = dashMonthlyValues.map(v =>
+                    v > 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'
+                );
+                createBarChart(dashMonthlyCtx, dashMonthlyLabels, dashMonthlyValues, 'Monthly Returns ($)', dashMonthlyColors);
+            }
+          
+            // Dashboard Symbol Chart
+            const symbolPieDataElem = document.getElementById('symbol-pie-data');
+            const symbolPieData = symbolPieDataElem ? JSON.parse(symbolPieDataElem.textContent) : null;
+            if (symbolPieData && symbolPieData.labels.length > 0) {
+                const dashSymbolCtx = document.getElementById('dashboardSymbolChart').getContext('2d');
+                createPieChart(dashSymbolCtx, symbolPieData.labels, symbolPieData.values);
+            }
+          
+            // Main Equity Chart
+            const equityDataElem = document.getElementById('equity-data');
+            const equityData = equityDataElem ? JSON.parse(equityDataElem.textContent) : null;
+            if (equityData && equityData.length > 0) {
+                const equityCtx = document.getElementById('equityChart').getContext('2d');
+                const equityLabels = equityData.map(row => row.date);
+                const equityValues = equityData.map(row => row.equity);
+                createLineChart(equityCtx, equityLabels, equityValues, 'Equity Curve', 'rgba(255,255,255,0.9)');
+            }
+          
+            // Drawdown Chart
+            const drawdownDataElem = document.getElementById('drawdown-data');
+            const drawdownData = drawdownDataElem ? JSON.parse(drawdownDataElem.textContent) : null;
+            if (drawdownData && drawdownData.length > 0) {
+                const drawdownCtx = document.getElementById('drawdownChart').getContext('2d');
+                const drawdownLabels = drawdownData.map(row => row.date);
+                const drawdownValues = drawdownData.map(row => row.drawdown);
+                createLineChart(drawdownCtx, drawdownLabels, drawdownValues, 'Drawdown (%)', 'rgba(239,68,68,0.9)');
+            }
+          
+            // Monthly Returns Chart
+            if (monthlyData && monthlyData.length > 0) {
+                const monthlyCtx = document.getElementById('monthlyReturnsChart').getContext('2d');
+                const monthlyLabels = monthlyData.map(row => row.month);
+                const monthlyValues = monthlyData.map(row => row.pnl);
+                const monthlyColors = monthlyValues.map(v =>
+                    v > 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'
+                );
+                createBarChart(monthlyCtx, monthlyLabels, monthlyValues, 'Monthly Returns ($)', monthlyColors);
+            }
+          
+            // Day of Week Chart
+            const dayWeekDataElem = document.getElementById('day-of-week-data');
+            const dayWeekData = dayWeekDataElem ? JSON.parse(dayWeekDataElem.textContent) : null;
+            if (dayWeekData && dayWeekData.length > 0) {
+                const dayCtx = document.getElementById('dayOfWeekChart').getContext('2d');
+                const dayLabels = dayWeekData.map(row => row.day);
+                const dayValues = dayWeekData.map(row => row.pnl);
+                const dayColors = dayValues.map(v =>
+                    v > 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'
+                );
+                createBarChart(dayCtx, dayLabels, dayValues, 'PnL by Day', dayColors);
+            }
+          
+            // Hour of Day Chart
+            const hourDataElem = document.getElementById('hour-of-day-data');
+            const hourData = hourDataElem ? JSON.parse(hourDataElem.textContent) : null;
+            if (hourData && hourData.length > 0) {
+                const hourCtx = document.getElementById('hourOfDayChart').getContext('2d');
+                const hourLabels = hourData.map(row => row.hour);
+                const hourValues = hourData.map(row => row.pnl);
+                const hourColors = hourValues.map(v =>
+                    v > 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'
+                );
+                createBarChart(hourCtx, hourLabels, hourValues, 'PnL by Hour', hourColors);
+            }
+          
+            // Session Chart
+            const sessionDataElem = document.getElementById('session-data');
+            const sessionData = sessionDataElem ? JSON.parse(sessionDataElem.textContent) : null;
+            if (sessionData && sessionData.length > 0) {
+                const sessionCtx = document.getElementById('sessionChart').getContext('2d');
+                const sessionLabels = sessionData.map(row => row.session);
+                const sessionValues = sessionData.map(row => row.pnl);
+                const sessionColors = sessionValues.map(v =>
+                    v > 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'
+                );
+                createBarChart(sessionCtx, sessionLabels, sessionValues, 'PnL by Session', sessionColors);
+            }
+          
+            // Profit Histogram
+            const profitHistDataElem = document.getElementById('profit-hist-data');
+            const profitHistData = profitHistDataElem ? JSON.parse(profitHistDataElem.textContent) : null;
+            if (profitHistData && profitHistData.labels.length > 0) {
+                const profitCtx = document.getElementById('profitHistogram').getContext('2d');
+                createBarChart(profitCtx, profitHistData.labels, profitHistData.counts,
+                    'Frequency', Array(profitHistData.counts.length).fill('rgba(255,255,255,0.6)'));
+            }
+          
+            // Duration Histogram
+            const durationHistDataElem = document.getElementById('duration-hist-data');
+            const durationHistData = durationHistDataElem ? JSON.parse(durationHistDataElem.textContent) : null;
+            if (durationHistData && durationHistData.labels.length > 0) {
+                const durationCtx = document.getElementById('durationHistogram').getContext('2d');
+                createBarChart(durationCtx, durationHistData.labels, durationHistData.counts,
+                    'Frequency', Array(durationHistData.counts.length).fill('rgba(255,255,255,0.6)'));
+            }
+          
+            // Symbol Pie
+            if (symbolPieData && symbolPieData.labels.length > 0) {
+                const symbolCtx = document.getElementById('symbolPie').getContext('2d');
+                createPieChart(symbolCtx, symbolPieData.labels, symbolPieData.values);
+            }
+          
+            // Trade Type Pie
+            const tradeTypeDataElem = document.getElementById('trade-type-data');
+            const tradeTypeData = tradeTypeDataElem ? JSON.parse(tradeTypeDataElem.textContent) : null;
+            if (tradeTypeData && tradeTypeData.labels.length > 0) {
+                const tradeTypeCtx = document.getElementById('tradeTypePie').getContext('2d');
+                createTradeTypePie(tradeTypeCtx, tradeTypeData.labels, tradeTypeData.values);
+            }
+        }
+      
+        // Initialize charts when page loads
+        window.addEventListener('load', initCharts);
+      
+        // Session check for auto-logout
+        setInterval(async () => {
+            try {
+                const response = await fetch('/check_session');
+                if (!response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (err) {
+                console.error('Session check failed:', err);
+            }
+        }, 30000); // Check every 30s
+      
+        // FIXED: Enhanced real-time update system - NO FLICKERING
+        let currentAccountId = null;
+        let lastUpdateTime = null;
+      
+        // Load initial account ID
+        const initialAccountIdElem = document.getElementById('initial-account-id');
+        if (initialAccountIdElem) {
+            currentAccountId = JSON.parse(initialAccountIdElem.textContent);
+        }
+      
+        // FIXED: Helper function to format numbers
+        function formatNumber(value, decimals = 2) {
+            return parseFloat(value).toLocaleString('en-US', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+      
+        // FIXED: Update metric value WITHOUT FLICKERING
+        function updateMetricValue(field, value, decimals = 2) {
+            const elements = document.querySelectorAll(`[data-field="${field}"]`);
+            
+            elements.forEach(elem => {
+                // Get current stored value
+                const currentValue = parseFloat(elem.getAttribute('data-value'));
+                const newValue = parseFloat(value);
+                
+                // Only update if value actually changed (prevents unnecessary DOM updates)
+                if (currentValue === newValue) {
+                    return; // Skip update - value hasn't changed
+                }
+                
+                // Store new raw value
+                elem.setAttribute('data-value', newValue);
+                
+                // Format the value
+                const formattedValue = formatNumber(newValue, decimals);
+                
+                // Build display text with prefix/suffix
+                const prefix = elem.getAttribute('data-prefix') || '';
+                const suffix = elem.getAttribute('data-suffix') || '';
+                const newText = prefix + formattedValue + suffix;
+                
+                // Update text content (no flickering since we checked value changed)
+                elem.textContent = newText;
+                
+                // Update color classes based on value (for P&L fields)
+                if (field.includes('profit') || field.includes('pnl') || field === 'roi' || 
+                    field.includes('today') || field.includes('week') || field.includes('month')) {
+                    elem.classList.remove('profit-green', 'loss-red');
+                    if (newValue > 0) {
+                        elem.classList.add('profit-green');
+                    } else if (newValue < 0) {
+                        elem.classList.add('loss-red');
+                    }
+                }
+            });
+        }
+      
+        // FIXED: Update open positions table WITHOUT FLICKERING
+        function updateOpenPositionsTable(positions) {
+            const tbody = document.getElementById('openPositionsTableBody');
+            if (!tbody) return;
+            
+            // If no positions, show empty message
+            if (!positions || positions.length === 0) {
+                const currentHTML = tbody.innerHTML.trim();
+                const emptyHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No open positions</td></tr>';
+                if (currentHTML.replace(/\s+/g, ' ') !== emptyHTML.replace(/\s+/g, ' ')) {
+                    tbody.innerHTML = emptyHTML;
+                }
+                return;
+            }
+            
+            // Build new table rows
+            const newRows = positions.map(pos => {
+                const profitClass = pos.profit > 0 ? 'profit-green' : pos.profit < 0 ? 'loss-red' : '';
+                const swapClass = pos.swap > 0 ? 'profit-green' : pos.swap < 0 ? 'loss-red' : '';
+                
+                return `<tr>
+                    <td><strong>${pos.symbol}</strong></td>
+                    <td>${pos.type}</td>
+                    <td>${pos.volume.toFixed(2)}</td>
+                    <td>${pos.open_price.toFixed(5)}</td>
+                    <td>${pos.current_price.toFixed(5)}</td>
+                    <td class="${profitClass}">$${pos.profit.toFixed(2)}</td>
+                    <td class="${swapClass}">$${pos.swap.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+            
+            // Only update if content changed (prevents flickering)
+            const currentHTML = tbody.innerHTML.trim().replace(/\s+/g, ' ');
+            const newHTML = newRows.trim().replace(/\s+/g, ' ');
+            
+            if (currentHTML !== newHTML) {
+                tbody.innerHTML = newRows;
+            }
+        }
+      
+        // Quick status polling - updates account values INSTANTLY without flickering (1 second)
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 5;
+      
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/quick_status');
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
+                    try {
+                        const errorData = await response.json();
+                        consecutiveErrors++;
+                        console.error('[ERROR] Quick status failed:', errorData);
+                        
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                            const errorMsg = `
+                                <div id="connection-error" style="position: fixed; top: 80px; right: 20px; background: rgba(239, 68, 68, 0.95);
+                                            color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 9999;
+                                            max-width: 400px; backdrop-filter: blur(10px);">
+                                    <strong>⚠️ Connection Error</strong><br>
+                                    ${errorData.error || 'Failed to connect to MT5'}<br>
+                                    <small>${errorData.troubleshooting || 'Check MT5 connection'}</small>
+                                    <button onclick="this.parentElement.remove()"
+                                            style="float: right; background: none; border: none; color: white;
+                                                   cursor: pointer; font-size: 1.2rem; margin-top: -0.5rem;">×</button>
+                                </div>
+                            `;
+                            if (!document.getElementById('connection-error')) {
+                                document.body.insertAdjacentHTML('beforeend', errorMsg);
+                            }
+                        }
+                        return;
+                    } catch (parseError) {
+                        throw new Error('Quick status fetch failed');
+                    }
+                }
+                
+                const quickData = await response.json();
+                
+                // Check if response contains an error
+                if (quickData.error) {
+                    consecutiveErrors++;
+                    console.error('[ERROR] Quick status returned error:', quickData);
+                    
+                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                        const errorMsg = `
+                            <div id="connection-error" style="position: fixed; top: 80px; right: 20px; background: rgba(239, 68, 68, 0.95);
+                                        color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 9999;
+                                        max-width: 400px; backdrop-filter: blur(10px);">
+                                <strong>⚠️ ${quickData.error}</strong><br>
+                                ${quickData.error_msg || ''}<br>
+                                <small>${quickData.troubleshooting || 'Check console for details'}</small>
+                                <button onclick="location.reload();"
+                                        style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: white;
+                                               color: #EF4444; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                                    Retry Connection
+                                </button>
+                            </div>
+                        `;
+                        if (!document.getElementById('connection-error')) {
+                            document.body.insertAdjacentHTML('beforeend', errorMsg);
+                        }
+                    }
+                    return;
+                }
+                
+                // Success - reset error counter
+                consecutiveErrors = 0;
+                const errorDiv = document.getElementById('connection-error');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+                
+                // Check for account change
+                if (currentAccountId !== null && quickData.account_id !== currentAccountId) {
+                    console.log('Account change detected, reloading page...');
+                    location.reload();
+                    return;
+                }
+                currentAccountId = quickData.account_id;
+                
+                // Update ALL account values WITHOUT FLICKERING
+                updateMetricValue('balance', quickData.balance, 2);
+                updateMetricValue('equity', quickData.equity, 2);
+                updateMetricValue('margin', quickData.margin, 2);
+                updateMetricValue('margin_free', quickData.margin_free, 2);
+                updateMetricValue('margin_level', quickData.margin_level, 2);
+                updateMetricValue('open_profit', quickData.open_profit, 2);
+                updateMetricValue('open_trades_count', quickData.open_trades_count, 0);
+                
+                // Update open positions table
+                if (quickData.open_positions) {
+                    updateOpenPositionsTable(quickData.open_positions);
+                }
+                
+                // Update last update time
+                lastUpdateTime = quickData.last_update;
+                const lastUpdateElem = document.getElementById('lastUpdate');
+                if (lastUpdateElem) {
+                    const newUpdateText = 'Updated: ' + quickData.last_update;
+                    if (lastUpdateElem.textContent !== newUpdateText) {
+                        lastUpdateElem.textContent = newUpdateText;
+                    }
+                }
+                
+            } catch (err) {
+                consecutiveErrors++;
+                console.error('[ERROR] Quick status update failed:', err);
+                
+                if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                    const errorMsg = `
+                        <div id="connection-error" style="position: fixed; top: 80px; right: 20px; background: rgba(239, 68, 68, 0.95);
+                                    color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 9999;
+                                    max-width: 400px; backdrop-filter: blur(10px);">
+                            <strong>⚠️ Connection Lost</strong><br>
+                            Unable to reach the server.<br>
+                            <small>Check your internet connection and MT5 terminal</small>
+                            <button onclick="location.reload();"
+                                    style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: white;
+                                           color: #EF4444; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                                Reload Page
+                            </button>
+                        </div>
+                    `;
+                    if (!document.getElementById('connection-error')) {
+                        document.body.insertAdjacentHTML('beforeend', errorMsg);
+                    }
+                }
+            }
+        }, 1000); // Poll every 1 second for instant updates
+      
+        // Full data refresh every 10 seconds (for all other metrics)
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/data');
+                if (!response.ok) {
+                    throw new Error('Full data fetch failed');
+                }
+                
+                const newData = await response.json();
+                
+                // Check if account changed
+                if (currentAccountId !== null && newData.account_id !== currentAccountId) {
+                    console.log('Account change detected in full refresh, reloading page...');
+                    location.reload();
+                    return;
+                }
+                
+                // Check if data actually changed
+                if (lastUpdateTime && newData.last_update === lastUpdateTime) {
+                    return; // No changes, skip update
+                }
+                
+                // Update all metric values
+                if (newData.metrics) {
+                    Object.keys(newData.metrics).forEach(key => {
+                        const value = newData.metrics[key];
+                        const decimals = ['balance', 'equity', 'total_profit', 'avg_win', 'avg_loss',
+                                        'expectancy', 'best_trade', 'worst_trade', 'open_profit',
+                                        'total_deposits', 'total_withdrawals', 'net_deposits',
+                                        'total_commissions', 'total_swaps', 'var_95'].includes(key) ? 2 :
+                                       ['total_pips'].includes(key) ? 1 :
+                                       ['avg_duration'].includes(key) ? 0 : 2;
+                        updateMetricValue(key, value, decimals);
+                    });
+                }
+                
+                // Update performance summary
+                if (newData.performance_summary) {
+                    Object.keys(newData.performance_summary).forEach(key => {
+                        const value = newData.performance_summary[key];
+                        updateMetricValue(key, value, 2);
+                    });
+                }
+                
+                lastUpdateTime = newData.last_update;
+                const lastUpdateElem = document.getElementById('lastUpdate');
+                if (lastUpdateElem) {
+                    lastUpdateElem.textContent = 'Updated: ' + newData.last_update;
+                }
+                
+            } catch (err) {
+                console.error('Full data update failed:', err);
+            }
+        }, 100000000); // Full refresh every 10 seconds
+    </script>
+</body>
+</html>

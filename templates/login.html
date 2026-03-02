@@ -1,0 +1,593 @@
+<!-- templates/login.html (Even Better: Added neumorphism 3D shadows, canvas particles for performance, glitch on hover, form validation JS, subtle footer, enhanced responsiveness. Organized with holographic tabs glowing stronger.) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huggingtrade Algo - Access</title>
+    <link rel="icon" type="image/jpeg" href="/logo.jpg">
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #000000;
+            --bg-hover: #151515;
+            --text-primary: #ffffff;
+            --text-secondary: #ffffff;
+            --accent: #ffffff;
+            --border: rgba(255, 255, 255, 0.15);
+            --shadow-light: inset 2px 2px 4px rgba(255,255,255,0.03), inset -2px -2px 4px rgba(0,0,0,0.1);
+            --shadow-dark: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.03);
+            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --loss-red: #EF4444;
+            --profit-green: #10B981;
+            --neon-glow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-y: auto; /* Scrollable */
+            position: relative;
+            padding: 4rem 1rem 2rem;
+        }
+        /* Enhanced dynamic background: Wave scan lines */
+        .bg-wave {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(255,255,255,0.04) 1px,
+                transparent 2px
+            );
+            animation: wave-scan 10s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+        @keyframes wave-scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+        /* Canvas for particles - better performance */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 480px;
+            z-index: 1;
+        }
+        .auth-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            text-align: center;
+            position: relative;
+            animation: float 6s ease-in-out infinite, pulse-glow 4s ease-in-out infinite alternate;
+            transition: var(--transition);
+            overflow: hidden;
+        }
+        .auth-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--neon-glow);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes pulse-glow {
+            from { box-shadow: 0 0 5px rgba(255,255,255,0.1); }
+            to { box-shadow: var(--neon-glow); }
+        }
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        .logo {
+            max-width: 100px;
+            height: auto;
+            margin-bottom: 1.5rem;
+            opacity: 1;
+            transition: var(--transition);
+            filter: brightness(1.2);
+        }
+        .logo:hover {
+            opacity: 1;
+            transform: scale(1.05) rotate(5deg);
+        }
+        .auth-card h1 {
+            color: var(--accent);
+            font-size: 2.2rem;
+            font-weight: 200;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+           
+        }
+        .auth-card h1:hover {
+            animation: glitch 0.5s;
+        }
+       
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.05em;
+            opacity: 0.9;
+        }
+        .auth-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        .tab-btn {
+            background: var(--bg-secondary);
+            border: 2px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            border-radius: 50px;
+            box-shadow: 0 0 4px rgba(255,255,255,0.1);
+        }
+        .tab-btn:hover {
+            color: var(--accent);
+            box-shadow: var(--neon-glow);
+            transform: translateY(-2px);
+        }
+        .tab-btn.active {
+            color: var(--accent);
+            background: var(--bg-hover);
+            box-shadow: var(--neon-glow);
+        }
+        .auth-form {
+            display: none;
+            animation: slideInForm 0.6s ease;
+        }
+        .auth-form.active {
+            display: block;
+        }
+        @keyframes slideInForm {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+            text-align: left;
+        }
+        .form-group label {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            pointer-events: none;
+            transition: var(--transition);
+            opacity: 0.8;
+        }
+        .form-group input:focus + label,
+        .form-group input:not(:placeholder-shown) + label {
+            top: -0.5rem;
+            left: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--accent);
+            opacity: 1;
+            background: var(--bg-primary);
+            padding: 0 0.25rem;
+        }
+        .password-container {
+            position: relative;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: var(--neon-glow);
+        }
+        .form-group input::placeholder {
+            color: transparent; /* Hide for floating label */
+        }
+        .form-group input:invalid:focus {
+            border-color: var(--loss-red);
+            box-shadow: 0 0 10px rgba(239,68,68,0.2);
+        }
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toggle-password:hover {
+            opacity: 1;
+            color: var(--accent);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .toggle-password svg {
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: var(--bg-secondary);
+            color: var(--accent);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            margin-top: 1rem;
+            box-shadow: 0 0 4px rgba(255,255,255,0.1);
+        }
+        .auth-btn:hover {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--neon-glow);
+        }
+        .message {
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            animation: slideIn 0.4s ease;
+            line-height: 1.4;
+        }
+        .error {
+            background: rgba(239,68,68,0.15);
+            color: var(--loss-red);
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+        .success {
+            background: rgba(16,185,129,0.15);
+            color: var(--profit-green);
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 2rem;
+            opacity: 0.7;
+            width: 100%;
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 2rem 0.5rem;
+            }
+            .auth-card {
+                padding: 2rem 1rem;
+            }
+            .auth-tabs {
+                gap: 0.5rem;
+            }
+            .tab-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            .form-group input {
+                padding: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-wave"></div>
+    <canvas id="particles-canvas"></canvas>
+    <div class="auth-container">
+        <div class="auth-card">
+            <img src="/logo.jpg" alt="Huggingtrade Logo" class="logo">
+            <h1> Algo</h1>
+            <p class="subtitle">
+
+                
+            </p>
+            <div class="auth-tabs">
+                <button type="button" class="tab-btn active" data-form="login">Login</button>
+                <button type="button" class="tab-btn" data-form="create">Create</button>
+                <button type="button" class="tab-btn" data-form="forget">Reset</button>
+                <button type="button" class="tab-btn" data-form="admin">Admin</button>
+            </div>
+            <form id="login-form" class="auth-form active" action="/user_login" method="post">
+                <div class="form-group">
+                    <input type="text" id="username_login" name="username" placeholder=" " required>
+                    <label for="username_login">Username</label>
+                </div>
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="password_login" name="password" placeholder=" " required>
+                        <label for="password_login">Password</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('password_login')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Access System</button>
+            </form>
+            <form id="create-form" class="auth-form" action="/create_account" method="post">
+                <div class="form-group">
+                    <input type="text" id="username_create" name="username" placeholder=" " required>
+                    <label for="username_create">Username</label>
+                </div>
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="password_create" name="password" placeholder=" " required>
+                        <label for="password_create">Password</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('password_create')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="confirm_create" name="confirm_password" placeholder=" " required>
+                        <label for="confirm_create">Confirm Password</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirm_create')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+            <form id="forget-form" class="auth-form" action="/forget_password" method="post">
+                <div class="form-group">
+                    <input type="text" id="username_forget" name="username" placeholder=" " required>
+                    <label for="username_forget">Username</label>
+                </div>
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="new_password_forget" name="new_password" placeholder=" " required>
+                        <label for="new_password_forget">New Password</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('new_password_forget')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="confirm_forget" name="confirm_new" placeholder=" " required>
+                        <label for="confirm_forget">Confirm New Password</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirm_forget')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Reset Password</button>
+            </form>
+            <form id="admin-form" class="auth-form" action="/admin_login" method="post">
+                <div class="form-group">
+                    <div class="password-container">
+                        <input type="password" id="code_admin" name="code" placeholder=" " required>
+                        <label for="code_admin">Secret Code</label>
+                        <button type="button" class="toggle-password" onclick="togglePassword('code_admin')">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Admin Access</button>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    <footer class="footer">Powered by Huggingtrade © 2026</footer>
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                document.getElementById(btn.dataset.form + '-form').classList.add('active');
+            });
+        });
+        // Password toggle
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+        }
+        // Form validation for create
+        function validateCreate() {
+            const pass = document.getElementById('password_create').value;
+            const confirm = document.getElementById('confirm_create').value;
+            return pass === confirm;
+        }
+        // Form validation for forget
+        function validateForget() {
+            const pass = document.getElementById('new_password_forget').value;
+            const confirm = document.getElementById('confirm_forget').value;
+            return pass === confirm;
+        }
+        // Canvas particles for better perf
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height + canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speed = Math.random() * 1 + 0.5;
+            }
+            update() {
+                this.y -= this.speed;
+                if (this.y < -this.size) {
+                    this.y = canvas.height + this.size;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        const particles = [];
+        for (let i = 0; i < 50; i++) { // More particles
+            particles.push(new Particle());
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+        // Client-side diagnostics for JS errors and form submissions
+        window.onerror = function(msg, url, line, col, error) {
+            console.error(`JS Error: ${msg} at ${url}:${line}:${col}`);
+            fetch('/diagnostics', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({error: `JS Error: ${msg} at ${url}:${line}:${col}`})
+            }).catch(console.error);
+            return false;
+        };
+        document.querySelectorAll('.auth-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const formId = form.id;
+                console.log(`Form submit attempt: ${formId}`);
+                fetch('/diagnostics', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({error: `Form submit attempt: ${formId}`})
+                }).catch(console.error);
+                let customValid = true;
+                let customError = '';
+                if (formId === 'create-form') {
+                    if (!validateCreate()) {
+                        customValid = false;
+                        customError = 'Passwords do not match';
+                    }
+                } else if (formId === 'forget-form') {
+                    if (!validateForget()) {
+                        customValid = false;
+                        customError = 'Passwords do not match';
+                    }
+                } else if (formId === 'admin-form') {
+                    // No custom validation for admin
+                } else if (formId === 'login-form') {
+                    // No custom validation for login
+                }
+                if (!customValid) {
+                    e.preventDefault();
+                    alert(customError + '!');
+                    fetch('/diagnostics', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({error: `Form validation failed: ${formId} - ${customError}`})
+                    }).catch(console.error);
+                    return;
+                }
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    form.reportValidity();
+                    fetch('/diagnostics', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({error: `Form invalid: ${formId} - required fields missing`})
+                    }).catch(console.error);
+                    return;
+                }
+                // If here, all valid - let browser submit the form
+                fetch('/diagnostics', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({error: `Form valid, submitting now: ${formId}`})
+                }).catch(console.error);
+            });
+        });
+        // Additional diagnostics for submit button clicks
+        document.querySelectorAll('.auth-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const formId = btn.closest('form').id;
+                console.log(`Submit button clicked: ${formId}`);
+                fetch('/diagnostics', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({error: `Submit button clicked: ${formId}`})
+                }).catch(console.error);
+            });
+        });
+    </script>
+</body>
+</html>

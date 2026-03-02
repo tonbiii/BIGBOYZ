@@ -1,0 +1,1780 @@
+<!-- templates/dashboarduser.html (Updated: Removed control-buttons for start/stop; users see only status.) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huggingtrade Algo</title>
+    <link rel="icon" type="image/jpeg" href="/logo.jpg">
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #111111;
+            --bg-card: #1a1a1a;
+            --bg-hover: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --accent: #ffffff;
+            --border: #333333;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+            --shadow-hover: 0 4px 20px rgba(0,0,0,0.5);
+            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --profit-green: #10B981;
+            --loss-red: #EF4444;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html {
+            height: 100%;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+            color: var(--text-primary);
+            display: flex;
+            height: 100%;
+            overflow: auto;
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: constant(safe-area-inset-bottom);
+        }
+        /* Custom thin glowing scrollbar */
+        ::-webkit-scrollbar {
+            width: 3px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+        .sidebar {
+            width: 280px;
+            background: #000000;
+            padding: 2rem 0;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            transition: var(--transition);
+            left: 0;
+            top: 0;
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: constant(safe-area-inset-bottom);
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            transition: opacity 0.3s ease;
+        }
+        body.sidebar-open .sidebar-overlay {
+            display: block;
+        }
+        .sidebar ul {
+            list-style: none;
+        }
+        .sidebar li {
+            margin: 0.5rem 0;
+        }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            position: relative;
+        }
+        .sidebar a::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: var(--transition);
+        }
+        .sidebar a:hover,
+        .sidebar a.active {
+            color: var(--accent);
+            background: var(--bg-card);
+            transform: translateX(8px);
+        }
+        .sidebar a.active::before,
+        .sidebar a:hover::before {
+            transform: scaleY(1);
+        }
+        .main {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            transition: var(--transition);
+            height: calc(100vh - var(--header-height));
+            -webkit-overflow-scrolling: touch;
+        }
+        .mobile-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 101;
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: constant(safe-area-inset-bottom);
+        }
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 102;
+        }
+        .hamburger span {
+            height: 3px;
+            width: 100%;
+            background: var(--accent);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            transform-origin: 1px;
+        }
+        body.sidebar-open .hamburger span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        body.sidebar-open .hamburger span:nth-child(2) {
+            opacity: 0;
+            transform: scale(0);
+        }
+        body.sidebar-open .hamburger span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 3rem;
+            font-weight: 200;
+            letter-spacing: 0.1em;
+            color: var(--text-primary);
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 1px;
+            background: var(--accent);
+            margin: 1rem auto;
+            opacity: 0.5;
+        }
+        .status-bar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            padding: 1rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            box-shadow: var(--shadow);
+        }
+        .status {
+            font-weight: 600;
+            margin-left: 0.5rem;
+            color: var(--accent);
+            transition: var(--transition);
+        }
+        .status.running {
+            color: var(--profit-green);
+        }
+        .status.stopped {
+            color: var(--loss-red);
+        }
+        .status:hover {
+            transform: scale(1.05);
+        }
+        .messages {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        .message {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            font-weight: 500;
+            animation: slideIn 0.4s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+        .error {
+            background: rgba(220, 53, 69, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+        .success {
+            background: rgba(40, 167, 69, 0.2);
+            color: #51cf66;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+        .warning {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .section {
+            display: none;
+            animation: fadeInUp 0.6s ease;
+            margin-bottom: 3rem;
+        }
+        .section.active-section {
+            display: block;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .section h2 {
+            color: var(--accent);
+            font-size: 2.2rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        /* Overview: Hero metrics with floating cards */
+        .hero-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        .metric-hero {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: help; /* New: For tooltip */
+        }
+        .metric-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+        .metric-hero:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+        .metric-hero .metric-tooltip { /* New: Tooltip style for zero-week note */
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 10;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .metric-hero:hover .metric-tooltip {
+            opacity: 1;
+        }
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 200;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+        .pl-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 300;
+        }
+        .pl-positive {
+            color: var(--profit-green);
+        }
+        .pl-negative {
+            color: var(--loss-red);
+        }
+        .pl-neutral {
+            color: var(--accent);
+        }
+        .pl-icon {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            transition: transform 0.2s ease;
+        }
+        .pl-positive .pl-icon {
+            color: var(--profit-green);
+        }
+        .pl-negative .pl-icon {
+            color: var(--loss-red);
+        }
+        .metric-hero:hover .pl-icon {
+            transform: scale(1.1);
+        }
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        /* New: Specific tooltip for Weekly P/L */
+        #weekly-pl:hover::after {
+            content: "Zero if no trades this week (includes all weeks in history)";
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 10;
+            border: 1px solid var(--border);
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .summary-bar {
+            display: flex;
+            justify-content: space-around;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: var(--accent);
+        }
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Info sections: Clean key-value grids */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .info-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .info-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .info-value {
+            font-weight: 500;
+            color: var(--accent);
+        }
+        /* Modals: Glassmorphism with organized tabs */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background: var(--glass-bg);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-hover);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 1.6rem;
+            font-weight: 300;
+        }
+        .close {
+            color: var(--text-secondary);
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0.7;
+        }
+        .close:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .tab-btn {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+            flex: 1;
+            text-align: center;
+        }
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
+        }
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        .modal-footer button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            flex: 1;
+            min-width: 100px; /* Touch-friendly on mobile */
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+        .btn-primary:hover, .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        /* Confirm Modal */
+        #confirm-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+        #confirm-modal .modal-body {
+            padding: 2rem;
+            color: var(--text-primary);
+        }
+        #confirm-modal .modal-footer {
+            justify-content: center;
+        }
+        /* Tables: Modern striped with hover */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+        .data-table th {
+            background: var(--bg-hover);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        .data-table tr:hover {
+            background: var(--bg-hover);
+        }
+        .trade-type {
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        .trade-buy {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            color: var(--profit-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .trade-sell {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            color: var(--loss-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .trade-type:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .trade-pl {
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .total-row {
+            font-weight: 600;
+            color: var(--accent);
+            text-align: right;
+        }
+        .total-pl {
+            color: inherit;
+        }
+        /* Expandable cards: Minimalist accordions */
+        .expandable-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .expandable-header {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+            transition: var(--transition);
+            color: var(--text-primary);
+        }
+        .expandable-header:hover {
+            background: var(--bg-hover);
+        }
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .expandable-card.open .expandable-content {
+            max-height: none;
+            overflow-y: auto;
+        }
+        .expandable-content-inner {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .expandable-content-inner p {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+        .signal-bullish {
+            color: var(--profit-green);
+        }
+        .signal-bearish {
+            color: var(--loss-red);
+        }
+        /* New: ROC styling (creative: color-coded, hover tooltip for interp) */
+        .roc-value {
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition);
+            position: relative;
+            cursor: help;
+        }
+        .roc-positive-high {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            color: var(--profit-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .roc-negative-high {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            color: var(--loss-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .roc-neutral {
+            color: var(--text-secondary);
+        }
+        .roc-tooltip {
+            visibility: hidden;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 10;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .roc-value:hover .roc-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .roc-value::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--border) transparent transparent transparent;
+        }
+        .sub-preds {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .sub-card {
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+        }
+        .sub-card .expandable-header {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+        .sub-card .expandable-content-inner {
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+        .sub-card .expandable-header:hover {
+            background: var(--bg-card);
+        }
+        /* History container */
+        #history-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        /* Trade list */
+        .trade-list {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .trade-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .trade-profit {
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: var(--transition);
+        }
+        .trade-profit.positive {
+            color: var(--profit-green);
+        }
+        .trade-profit.negative {
+            color: var(--loss-red);
+        }
+        .trade-profit:hover {
+            text-shadow: 0 0 8px currentColor;
+        }
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        /* Real-time trade highlight in open trades table */
+        .trade-realtime {
+            animation: pulse 2s infinite;
+            border-left: 3px solid var(--profit-green);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        /* Responsive: Desktop intact, mobile enhancements */
+        @media (max-width: 768px) {
+            header.header {
+                display: none;
+            }
+            .mobile-header .header {
+                margin-bottom: 0;
+                font-size: 2rem;
+            }
+            .mobile-header .header::after {
+                margin: 0.5rem auto;
+            }
+            .status-bar {
+                margin-top: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 102;
+            }
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+            .main {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .mobile-header {
+                display: flex;
+            }
+            .header {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+                padding: 0 1rem;
+            }
+            .section h2 {
+                font-size: 1.8rem;
+                margin-bottom: 1.5rem;
+                padding: 0 0.5rem;
+            }
+            .hero-metrics {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+            .metric-hero {
+                padding: 1.5rem;
+            }
+            .metric-value {
+                font-size: 2.5rem;
+            }
+            .summary-bar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .info-card {
+                padding: 1rem;
+            }
+            .info-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.5rem 0;
+            }
+            .data-table-wrapper {
+                overflow-x: auto;
+            }
+            .data-table {
+                min-width: 600px; /* Ensure horizontal scroll */
+            }
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.9rem;
+            }
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+                margin: 2.5% auto;
+            }
+            .modal-header {
+                padding: 1.5rem;
+            }
+            .modal-header h3 {
+                font-size: 1.4rem;
+            }
+            .tab-content {
+                padding: 1.5rem;
+            }
+            .modal-footer {
+                padding: 1rem 1.5rem;
+                gap: 0.5rem;
+            }
+            .expandable-header {
+                padding: 1rem;
+                font-size: 0.95rem;
+            }
+            .expandable-content-inner {
+                padding: 1rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .main {
+                padding: 0.5rem;
+            }
+            .mobile-header .header {
+                font-size: 1.8rem;
+            }
+            .section h2 {
+                font-size: 1.5rem;
+            }
+            .metric-hero {
+                padding: 1rem;
+            }
+            .metric-value {
+                font-size: 2rem;
+            }
+            .status-bar {
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
+                border-radius: 25px;
+            }
+            .summary-bar {
+                padding: 0.75rem;
+            }
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            .info-card {
+                padding: 0.75rem;
+            }
+            .trade-item {
+                flex-direction: column;
+                gap: 0.25rem;
+                text-align: left;
+            }
+            .modal-tabs {
+                flex-wrap: wrap;
+            }
+            .tab-btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+        .warning {
+            color: #ffc107;
+            background: rgba(255, 193, 7, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <nav class="sidebar" id="sidebar">
+        <ul>
+            <li><a href="#" data-section="overview" class="active">Overview</a></li>
+            <li><a href="#" data-section="account">Account</a></li>
+            <li><a href="#" data-section="config">Trading Account</a></li>
+            <li><a href="#" data-section="open-trades">Live Trades</a></li>
+            <li><a href="#" data-section="closed-trades">History</a></li>
+            <li><a href="/marketing_dashboard">My Performance</a></li>
+            <li><a href="/logout" class="confirm-link" data-confirm="Are you sure you want to log out?">Logout</a></li>
+        </ul>
+    </nav>
+    <main class="main">
+        <div class="mobile-header">
+            <button class="hamburger" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="header">Algo Control</div>
+            <div></div> <!-- Spacer for alignment -->
+        </div>
+        <header class="header">Hugging Algo Control</header>
+        <div class="status-bar">
+            <span>Status:</span>
+            <span class="status" id="status">Stopped</span>
+        </div>
+        <div class="messages" id="messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        <!-- Overview -->
+        <section id="overview" class="section active-section">
+            <h2>Dashboard</h2>
+            <div class="hero-metrics">
+                <div class="metric-hero">
+                    <div class="metric-value" id="balance">$0.00</div>
+                    <div class="metric-label">Balance</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value" id="equity">$0.00</div>
+                    <div class="metric-label">Equity</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="daily-percent">0.00%</div>
+                    <div class="metric-label">Daily %</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="weekly-percent">0.00%</div>
+                    <div class="metric-label">Weekly %</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="monthly-percent">0.00%</div>
+                    <div class="metric-label">Monthly %</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="daily-pl">$0.00</div>
+                    <div class="metric-label">Daily P/L</div>
+                </div>
+                <div class="metric-hero" id="weekly-pl">
+                    <div class="metric-value pl-value" id="weekly-pl-val">$0.00</div>
+                    <div class="metric-label">Weekly P/L</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="monthly-pl">$0.00</div>
+                    <div class="metric-label">Monthly P/L</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value" id="open-count">0</div>
+                    <div class="metric-label">Open</div>
+                </div>
+                <div class="metric-hero">
+                    <div class="metric-value pl-value" id="floating-pl">$0.00</div>
+                    <div class="metric-label">Floating</div>
+                </div>
+            </div>
+            <div class="summary-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="total-trades">0</div>
+                    <div class="stat-label">Trades</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="win-rate">0%</div>
+                    <div class="stat-label">Win Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value pl-value total-pl" id="total-profit">$0.00</div>
+                    <div class="stat-label">Profit</div>
+                </div>
+            </div>
+        </section>
+        <!-- Account -->
+        <section id="account" class="section">
+            <h2>Account Overview</h2>
+            <div class="info-grid">
+                <div class="info-card" id="account-display">
+                    <div class="empty-state">Loading account data...</div>
+                </div>
+            </div>
+        </section>
+        <!-- Trading Account (view-only, no update) -->
+        <section id="config" class="section">
+            <h2>Trading Account</h2>
+            <div class="info-grid">
+                <div class="info-card" id="config-display">
+                    <div class="empty-state">Loading config...</div>
+                </div>
+            </div>
+        </section>
+        <!-- Live Trades -->
+        <section id="open-trades" class="section">
+            <h2>Live Positions</h2>
+            <div id="open-trades-display">
+                <div class="empty-state">No open trades or loading...</div>
+            </div>
+        </section>
+        <!-- History -->
+        <section id="closed-trades" class="section">
+            <h2>Trade History</h2>
+            <div class="summary-bar" id="closed-trades-summary">
+                <div class="empty-state">Loading summary...</div>
+            </div>
+            <div id="history-container">
+                <div class="empty-state">No closed trades yet.</div>
+            </div>
+        </section>
+    </main>
+    <!-- Modals (kept but not used in user view, as no edits) -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Trading Account</h3>
+                <span class="close" onclick="closeModal('config-modal')">&times;</span>
+            </div>
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="switchTab('config', 'basic')">Basic</button>
+            </div>
+            <form id="credentials-form" action="/update_credentials" method="post" class="tab-content active" onsubmit="return confirmActionForm(event, 'Update credentials? This will validate and apply new MT5 details.')">
+                <div class="form-group">
+                    <label for="symbol">Symbol</label>
+                    <input type="text" id="symbol" name="symbol">
+                </div>
+                <div class="form-group">
+                    <label for="account">Account Number</label>
+                    <input type="number" id="account" name="account">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password">
+                </div>
+                <div class="form-group">
+                    <label for="server">Server</label>
+                    <input type="text" id="server" name="server">
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('config-modal')">Cancel</button>
+                <button type="submit" form="credentials-form" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+    <!-- Single Field Edit Modal -->
+    <div id="single-edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="single-title">Edit Field</h3>
+                <span class="close" onclick="closeModal('single-edit-modal')">&times;</span>
+            </div>
+            <form id="single-form" method="post" onsubmit="return confirmActionForm(event, 'Update this setting? Changes apply immediately.')">
+                <div class="tab-content active">
+                    <div class="form-group">
+                        <label id="single-label">Field</label>
+                        <input id="single-input" required>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('single-edit-modal')">Cancel</button>
+                <button type="submit" form="single-form" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Action</h3>
+                <span class="close" onclick="closeConfirm()">&times;</span>
+            </div>
+            <div class="modal-body" id="confirm-message"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeConfirm()">Cancel</button>
+                <button type="button" class="btn-primary" onclick="proceedConfirm()" id="confirm-yes">Yes</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let dynamicPollInterval, semiStaticPollInterval;
+        let lastData = { account: {}, open_trades: {}, closed_trades: {}, logCount: 0, predCount: 0, executedPredCount: 0, pendingPredCount: 0 };
+        let dataTimestamps = { dynamic: 0, semiStatic: 0 };
+        let isInteracting = false;
+        let confirmActionData = null; // For confirm modal
+        const formStates = {
+            credentials: { values: { symbol: '', account: '', password: '', server: '' } },
+            settings: { values: {} }
+        };
+        let lastOpenTradesHash = ''; // For real-time diff highlight
+        let lastEtags = {}; // For ETag per endpoint
+        let configLoaded = false; // For one-time config
+        // NEW: Auto-remove initial flash messages after 2s on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialMessages = document.querySelectorAll('#messages .message');
+            initialMessages.forEach(msg => {
+                setTimeout(() => {
+                    if (msg.parentNode) {
+                        msg.remove();
+                    }
+                }, 2000);
+            });
+            // Initial fetch on load for all data
+            loadConfig();
+            fetchWithExpiryCheck('/live').then(data => {
+                if (data) {
+                    console.log('Initial live data:', data); // Debug
+                    updateDynamic(data);
+                    // Fetch initial history for summary
+                    fetchWithExpiryCheck('/history').then(historyData => {
+                        if (historyData) {
+                            updateSummaryBar(historyData);
+                            lastData.closed_trades = historyData;
+                        } else {
+                            // Set summary to zeros/error
+                            updateSummaryBar({summary: {}});
+                        }
+                    });
+                    startPolling();
+                } else {
+                    // New: On initial fetch fail, set sections to error state
+                    setErrorStates('Initial fetch failed - check connection or login.');
+                }
+            });
+        });
+        // Visibility change handler for perf (pause polling when tab hidden)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                startPolling();
+            } else {
+                if (dynamicPollInterval) clearInterval(dynamicPollInterval);
+                if (semiStaticPollInterval) clearInterval(semiStaticPollInterval);
+            }
+        });
+        // New: Set error states for sections if fetch fails
+        function setErrorStates(errorMsg) {
+            document.getElementById('account-display').innerHTML = `<p style="color: #ff6b6b;">${errorMsg}</p>`;
+            document.getElementById('config-display').innerHTML = `<p style="color: #ff6b6b;">${errorMsg}</p>`;
+            document.getElementById('open-trades-display').innerHTML = `<p style="color: #ff6b6b;">${errorMsg}</p>`;
+            document.getElementById('history-container').innerHTML = `<p style="color: #ff6b6b;">${errorMsg}</p>`;
+            document.getElementById('closed-trades-summary').innerHTML = `<p style="color: #ff6b6b;">${errorMsg}</p>`;
+        }
+        // Helper function to format P/L with class, icon, and comma separation
+        function formatPL(value) {
+            const num = parseFloat(value) || 0;
+            const sign = num > 0 ? '+' : '';
+            const formatted = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            let className = 'pl-neutral';
+            let icon = '';
+            if (num > 0) {
+                className = 'pl-positive';
+                icon = '▲';
+            } else if (num < 0) {
+                className = 'pl-negative';
+                icon = '▼';
+            }
+            return `<span class="${className}"><span class="pl-icon">${icon}</span>$${sign}${formatted}</span>`;
+        }
+        // Helper function for percentage P/L formatting
+        function formatPercent(value) {
+            const num = parseFloat(value) || 0;
+            const sign = num > 0 ? '+' : '';
+            const formatted = num.toFixed(2);
+            let className = 'pl-neutral';
+            let icon = '';
+            if (num > 0) {
+                className = 'pl-positive';
+                icon = '▲';
+            } else if (num < 0) {
+                className = 'pl-negative';
+                icon = '▼';
+            }
+            return `<span class="${className}"><span class="pl-icon">${icon}</span>${sign}${formatted}%</span>`;
+        }
+        // Helper function for general number formatting with commas
+        function formatNumber(num, decimals = 2) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        }
+        function formatInteger(num) {
+            return num.toLocaleString('en-US');
+        }
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-open');
+        }
+        function closeSidebar() {
+            document.body.classList.remove('sidebar-open');
+        }
+        // Confirm functions
+        function confirmAction(url, message) {
+            confirmActionData = { action: 'redirect', target: url, message };
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-modal').style.display = 'block';
+            if (dynamicPollInterval) clearInterval(dynamicPollInterval);
+            if (semiStaticPollInterval) clearInterval(semiStaticPollInterval);
+            return false;
+        }
+        function confirmActionForm(event, message) {
+            event.preventDefault();
+            confirmActionData = { action: 'submitForm', target: event.target, message };
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-modal').style.display = 'block';
+            if (dynamicPollInterval) clearInterval(dynamicPollInterval);
+            if (semiStaticPollInterval) clearInterval(semiStaticPollInterval);
+            return false;
+        }
+        function closeConfirm() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            confirmActionData = null;
+            startPolling();
+        }
+        function proceedConfirm() {
+            if (confirmActionData) {
+                if (confirmActionData.action === 'submitForm') {
+                    confirmActionData.target.submit();
+                } else {
+                    window.location.href = confirmActionData.target;
+                }
+            }
+            closeConfirm();
+        }
+        // Intercept confirm links
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.confirm-link')) {
+                e.preventDefault();
+                const link = e.target.closest('.confirm-link');
+                confirmAction(link.href, link.dataset.confirm);
+            }
+        });
+        // Single field edit (disabled for users, but kept for compatibility)
+        function openSingleEdit(type, field, currentValue) {
+            // Users can't edit, so no-op or alert
+            showMessage('Edit access restricted to admin.', 'warning');
+        }
+        // Helper to handle status fetch with session expiry check and ETag
+        async function fetchWithExpiryCheck(url) {
+            const headers = {};
+            if (lastEtags[url]) {
+                headers['If-None-Match'] = lastEtags[url];
+            }
+            try {
+                const response = await fetch(url, { headers });
+                if (response.status === 304) {
+                    return null; // No change
+                }
+                if (!response.ok) {
+                    const data = await response.json();
+                    if (data.error && data.error.includes('Session expired')) {
+                        showMessage(data.error, 'error');
+                        window.location.href = '/login';
+                    } else if (data.error && data.error.includes('Not authenticated')) {
+                        showMessage('Please log in to access the dashboard.', 'error');
+                        window.location.href = '/login';
+                    }
+                    return data;
+                }
+                const etag = response.headers.get('ETag');
+                if (etag) {
+                    lastEtags[url] = etag;
+                }
+                return await response.json();
+            } catch (err) {
+                console.error('Fetch error:', err);
+                showMessage('Connection error. Please refresh.', 'error');
+                return null;
+            }
+        }
+        // Load config once
+        async function loadConfig() {
+            if (!configLoaded) {
+                const data = await fetchWithExpiryCheck('/config');
+                if (data) {
+                    updateStaticDisplays(data);
+                    configLoaded = true;
+                }
+            }
+        }
+        // Start granular polling - Faster: 1s dynamic (real-time trades/balance), 5s semi (history/logs)
+        function startPolling() {
+            if (document.visibilityState !== 'visible') return; // Perf: Skip if hidden
+            dynamicPollInterval = setInterval(async () => {
+                if (!isInteracting && document.visibilityState === 'visible') {
+                    const data = await fetchWithExpiryCheck('/live');
+                    if (data) updateDynamic(data);
+                }
+            }, 2000); // Increased to 2s for stability
+            semiStaticPollInterval = setInterval(async () => {
+                if (!isInteracting && document.visibilityState === 'visible') {
+                    const activeSectionEl = document.querySelector('.section.active-section');
+                    const activeSection = activeSectionEl ? activeSectionEl.id : null;
+                    // Always fetch history for summary update
+                    let historyData = await fetchWithExpiryCheck('/history');
+                    if (historyData) {
+                        updateSummaryBar(historyData);
+                        lastData.closed_trades = historyData;
+                        if (activeSection === 'closed-trades') {
+                            updateHistoryIncremental(historyData);
+                        }
+                    }
+                }
+            }, 5000); // 5s for semi-static, balanced load
+        }
+        // New: Update the summary bar in Overview (and History if active)
+        function updateSummaryBar(data) {
+            const summary = data.summary || {};
+            document.getElementById('total-trades').textContent = formatInteger(summary.total_trades || 0);
+            document.getElementById('win-rate').textContent = `${(summary.win_rate || 0).toFixed(1)}%`;
+            document.getElementById('total-profit').innerHTML = formatPL(summary.total_profit || 0);
+            // Also update the history summary if exists
+            const historySummary = document.getElementById('closed-trades-summary');
+            if (historySummary) {
+                historySummary.innerHTML = `
+                    <div class="stat-item"><div class="stat-value">${formatInteger(summary.total_trades || 0)}</div><div class="stat-label">Total Trades</div></div>
+                    <div class="stat-item"><div class="stat-value">${(summary.win_rate || 0).toFixed(1)}%</div><div class="stat-label">Win Rate</div></div>
+                    <div class="stat-item"><div class="stat-value pl-value total-pl">${formatPL(summary.total_profit || 0)}</div><div class="stat-label">Net Profit</div></div>
+                `;
+            }
+        }
+        function updateDynamic(data) {
+            try {
+                console.log('Updating dynamic data:', data); // Debug
+                if (data.error) {
+                    showMessage(`Server error: ${data.error}`, 'error');
+                    return;
+                }
+                // Status
+                const statusEl = document.getElementById('status');
+                const active = data.running && data.within_hours;
+                const statusText = active ? 'Running' : 'Not Running';
+                statusEl.textContent = statusText;
+                statusEl.className = `status ${active ? 'running' : 'stopped'}`;
+                // Overview metrics - always update, fallback to 0 on error
+                const account = data.account || {};
+                if (account.error) {
+                    showMessage(`Account Error: ${account.error}`, 'warning');
+                }
+                document.getElementById('balance').textContent = account.error ? '$0.00' : `$${formatNumber(account.balance || 0)}`;
+                document.getElementById('equity').textContent = account.error ? '$0.00' : `$${formatNumber(account.equity || 0)}`;
+                document.getElementById('daily-pl').innerHTML = account.error ? '$0.00' : formatPL(account.daily_profit || 0);
+                document.getElementById('weekly-pl-val').innerHTML = account.error ? '$0.00' : formatPL(account.weekly_profit || 0);
+                document.getElementById('monthly-pl').innerHTML = account.error ? '$0.00' : formatPL(account.monthly_profit || 0);
+                const openTrades = data.open_trades || {};
+                if (openTrades.error) {
+                    showMessage(`Trades Error: ${openTrades.error}`, 'warning');
+                }
+                document.getElementById('open-count').textContent = openTrades.error ? '0' : formatInteger(openTrades.trades ? openTrades.trades.length : 0);
+                document.getElementById('floating-pl').innerHTML = openTrades.error ? '$0.00' : formatPL(openTrades.total_profit || 0);
+                // Update percentage cards
+                const balance = account.balance || 0;
+                const daily_pnl = account.daily_profit || 0;
+                const daily_start = balance - daily_pnl;
+                const daily_pct = daily_start !== 0 ? (daily_pnl / daily_start * 100) : 0;
+                document.getElementById('daily-percent').innerHTML = formatPercent(daily_pct);
+                const weekly_pnl = account.weekly_profit || 0;
+                const weekly_start = balance - weekly_pnl;
+                const weekly_pct = weekly_start !== 0 ? (weekly_pnl / weekly_start * 100) : 0;
+                document.getElementById('weekly-percent').innerHTML = formatPercent(weekly_pct);
+                const monthly_pnl = account.monthly_profit || 0;
+                const monthly_start = balance - monthly_pnl;
+                const monthly_pct = monthly_start !== 0 ? (monthly_pnl / monthly_start * 100) : 0;
+                document.getElementById('monthly-percent').innerHTML = formatPercent(monthly_pct);
+                // Account display - always update, show error inline if present
+                const accountDiv = document.getElementById('account-display');
+                requestAnimationFrame(() => {
+                    if (account.error) {
+                        accountDiv.innerHTML = `<p class="warning">Partial data: ${account.error}</p>`;
+                    } else {
+                        accountDiv.innerHTML = `
+                            <div class="info-item"><span class="info-label">Balance</span><span class="info-value">$${formatNumber(account.balance || 0)}</span></div>
+                            <div class="info-item"><span class="info-label">Equity</span><span class="info-value">$${formatNumber(account.equity || 0)}</span></div>
+                            <div class="info-item"><span class="info-label">Daily %</span><span class="info-value">${formatPercent(daily_pct)}</span></div>
+                            <div class="info-item"><span class="info-label">Weekly %</span><span class="info-value">${formatPercent(weekly_pct)}</span></div>
+                            <div class="info-item"><span class="info-label">Monthly %</span><span class="info-value">${formatPercent(monthly_pct)}</span></div>
+                            <div class="info-item"><span class="info-label">Daily P/L</span><span class="info-value">${formatPL(account.daily_profit || 0)}</span></div>
+                            <div class="info-item"><span class="info-label">Weekly P/L</span><span class="info-value">${formatPL(weekly_pnl)}</span></div>
+                            <div class="info-item"><span class="info-label">Monthly P/L</span><span class="info-value">${formatPL(account.monthly_profit || 0)}</span></div>
+                            <div class="info-item"><span class="info-label">Leverage</span><span class="info-value">1:${account.leverage || 0}</span></div>
+                            <div class="info-item"><span class="info-label">Margin</span><span class="info-value">$${formatNumber(account.margin || 0)}</span></div>
+                            <div class="info-item"><span class="info-label">Free Margin</span><span class="info-value">$${formatNumber(account.margin_free || 0)}</span></div>
+                        `;
+                    }
+                });
+                lastData.account = account;
+                // Open trades - granular update with missing tolerance
+                const openDiv = document.getElementById('open-trades-display');
+                const currentHash = JSON.stringify(openTrades.trades || []);
+                if (currentHash !== lastOpenTradesHash) {
+                    lastOpenTradesHash = currentHash; // Update hash
+                }
+                requestAnimationFrame(() => {
+                    if (openTrades.error || !openTrades.trades || openTrades.trades.length === 0) {
+                        openDiv.innerHTML = openTrades.error ? `<p class="warning">Partial data: ${openTrades.error}</p><div class="empty-state">No open trades.</div>` : '<div class="empty-state">No open trades.</div>';
+                    } else {
+                        // Ensure table structure
+                        if (!openDiv.querySelector('.data-table-wrapper')) {
+                            openDiv.innerHTML = '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Ticket</th><th>Type</th><th>Volume</th><th>Entry</th><th>Current</th><th>P/L</th><th>Time</th></tr></thead><tbody></tbody></table></div><div class="total-row">Total Floating P/L: <span class="total-pl">$0.00</span></div>';
+                        }
+                        const tbody = openDiv.querySelector('tbody');
+                        const tradesMap = new Map(openTrades.trades.map(t => [t.ticket + '', t])); // String ticket
+                        // Update existing rows
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        rows.forEach(row => {
+                            const ticket = row.dataset.ticket;
+                            if (tradesMap.has(ticket)) {
+                                const trade = tradesMap.get(ticket);
+                                const typeClass = trade.type.toLowerCase().includes('buy') ? 'trade-buy' : 'trade-sell';
+                                const volFormatted = formatNumber(trade.volume || 0, 2);
+                                const entryFormatted = (trade.entry_price || 0).toFixed(5);
+                                const currentFormatted = (trade.current_price || 0).toFixed(5);
+                                let serverTime = 'Invalid';
+                                const timeDate = new Date(trade.time * 1000);
+                                if (!isNaN(timeDate.getTime())) {
+                                    serverTime = timeDate.toLocaleString();
+                                }
+                                const tds = row.querySelectorAll('td');
+                                tds[0].textContent = formatInteger(trade.ticket);
+                                tds[1].innerHTML = `<span class="trade-type ${typeClass}">${trade.type}</span>`;
+                                tds[2].textContent = volFormatted;
+                                tds[3].textContent = entryFormatted;
+                                tds[4].textContent = currentFormatted;
+                                tds[5].innerHTML = `<span class="trade-pl">${formatPL(trade.profit || 0)}</span>`;
+                                tds[6].textContent = serverTime;
+                                row.dataset.missing = '0';
+                                row.classList.remove('trade-missing');
+                                tradesMap.delete(ticket);
+                            } else {
+                                let missing = parseInt(row.dataset.missing || '0') + 1;
+                                row.dataset.missing = missing;
+                                if (missing > 2) {
+                                    row.remove();
+                                } else {
+                                    row.classList.add('trade-missing'); // Optional: add class for styling (e.g., opacity: 0.5;)
+                                }
+                            }
+                        });
+                        // Add new rows
+                        tradesMap.forEach(trade => {
+                            const typeClass = trade.type.toLowerCase().includes('buy') ? 'trade-buy' : 'trade-sell';
+                            const volFormatted = formatNumber(trade.volume || 0, 2);
+                            const entryFormatted = (trade.entry_price || 0).toFixed(5);
+                            const currentFormatted = (trade.current_price || 0).toFixed(5);
+                            let serverTime = 'Invalid';
+                            const timeDate = new Date(trade.time * 1000);
+                            if (!isNaN(timeDate.getTime())) {
+                                serverTime = timeDate.toLocaleString();
+                            }
+                            const newRow = document.createElement('tr');
+                            newRow.dataset.ticket = trade.ticket + '';
+                            newRow.dataset.missing = '0';
+                            newRow.innerHTML = `
+                                <td>${formatInteger(trade.ticket)}</td>
+                                <td><span class="trade-type ${typeClass}">${trade.type}</span></td>
+                                <td>${volFormatted}</td>
+                                <td>${entryFormatted}</td>
+                                <td>${currentFormatted}</td>
+                                <td><span class="trade-pl">${formatPL(trade.profit || 0)}</span></td>
+                                <td>${serverTime}</td>
+                            `;
+                            tbody.appendChild(newRow);
+                        });
+                        // Update total
+                        openDiv.querySelector('.total-row').innerHTML = `Total Floating P/L: <span class="total-pl">${formatPL(openTrades.total_profit || 0)}</span>`;
+                    }
+                });
+                lastData.open_trades = openTrades;
+                dataTimestamps.dynamic = Date.now();
+            } catch (e) {
+                showMessage(`Dynamic update error: ${e}`, 'error');
+            }
+        }
+        // Toggle
+        function toggleExpandable(card) {
+            isInteracting = true;
+            clearInterval(dynamicPollInterval);
+            clearInterval(semiStaticPollInterval);
+            card.classList.toggle('open');
+            setTimeout(() => {
+                isInteracting = false;
+                startPolling();
+            }, 500); // Fixed: Consistent timeout
+        }
+        // Navigation
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', async (e) => {
+                if (link.classList.contains('confirm-link')) {
+                    return;
+                }
+                const section = link.dataset.section;
+                if (section) {
+                    e.preventDefault();
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+                    document.getElementById(section).classList.add('active-section');
+                    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+                    link.classList.add('active');
+                    // Close sidebar on mobile after navigation
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                    if (['closed-trades'].includes(section)) {
+                        let url = '';
+                        if (section === 'closed-trades') url = '/history';
+                        const data = await fetchWithExpiryCheck(url);
+                        if (data) {
+                            if (section === 'closed-trades') {
+                                updateHistoryIncremental(data);
+                            }
+                        }
+                    }
+                } // If no section, allow default (e.g., redirect to /marketing_dashboard)
+            });
+        });
+        // Modals (no-op for users)
+        function openModal(modalId) {
+            showMessage('Update access restricted to admin.', 'warning');
+        }
+        function closeModal(modalId) {
+            // No-op
+        }
+        function switchTab(modalType, tab) {
+            // No-op
+        }
+        function populateForm(modalId) {
+            // No-op
+        }
+        // Messages - UPDATED: 2s timeout for all; auto-remove initial on load already handled
+        function showMessage(message, category = 'success') {
+            const msg = document.createElement('div');
+            msg.className = `message ${category}`;
+            msg.textContent = message;
+            document.getElementById('messages').appendChild(msg);
+            setTimeout(() => {
+                if (msg.parentNode) {
+                    msg.remove();
+                }
+            }, 2000);
+        }
+        // Static displays
+        function updateStaticDisplays(data) {
+            try {
+                const config = data || {};
+                const configDiv = document.getElementById('config-display');
+                requestAnimationFrame(() => {
+                    configDiv.innerHTML = `
+                        <div class="info-item"><span class="info-label">Symbol</span><span class="info-value">${config.SYMBOL || 'N/A'}</span></div>
+                        <div class="info-item"><span class="info-label">Account</span><span class="info-value">${config.MT5_ACCOUNT || 'N/A'}</span></div>
+                        <div class="info-item"><span class="info-label">Password</span><span class="info-value">***</span></div>
+                        <div class="info-item"><span class="info-label">Server</span><span class="info-value">${config.MT5_SERVER || 'N/A'}</span></div>
+                    `;
+                });
+                formStates.credentials.values = { symbol: config.SYMBOL, account: config.MT5_ACCOUNT, server: config.MT5_SERVER };
+                lastData.config = config; // Save for diff if needed
+            } catch (e) {
+                showMessage(`Static update error: ${e}`, 'error');
+            }
+        }
+        function updateHistoryIncremental(closed) {
+            try {
+                const historyDiv = document.getElementById('history-container');
+                const summaryDiv = document.getElementById('closed-trades-summary');
+                // Always update summary to 0/fallback on error
+                const totalTrades = formatInteger((closed.summary ? closed.summary.total_trades : 0) || 0);
+                const winRate = ((closed.summary ? closed.summary.win_rate : 0) || 0).toFixed(1);
+                const netProfit = formatPL((closed.summary ? closed.summary.total_profit : 0) || 0);
+                requestAnimationFrame(() => {
+                    summaryDiv.innerHTML = `
+                        <div class="stat-item"><div class="stat-value">${totalTrades}</div><div class="stat-label">Total Trades</div></div>
+                        <div class="stat-item"><div class="stat-value">${winRate}%</div><div class="stat-label">Win Rate</div></div>
+                        <div class="stat-item"><div class="stat-value pl-value total-pl">${netProfit}</div><div class="stat-label">Net Profit</div></div>
+                    `;
+                });
+                if (closed.error) {
+                    historyDiv.innerHTML = `<p class="warning">Partial data: ${closed.error}</p>`;
+                    return;
+                }
+                const groups = closed.groups || {};
+                if (Object.keys(groups).length === 0) {
+                    historyDiv.innerHTML = '<div class="empty-state">No closed trades yet.</div>';
+                    return;
+                }
+                // Time-based sorting for groups and trades
+                let groupEntries = Object.entries(groups).map(([name, g]) => {
+                    const maxTime = g.trades ? Math.max(...g.trades.map(t => new Date(t.time).getTime())) : 0;
+                    return { name, group: g, sortKey: maxTime };
+                }).sort((a, b) => b.sortKey - a.sortKey);
+                let html = '';
+                groupEntries.forEach(({ name, group }) => {
+                    const summary = group.summary || {};
+                    const sortedTrades = (group.trades || []).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+                    const tradesHtml = sortedTrades.map(t => buildTradeItem(t)).join('');
+                    const netProfitWeek = formatPL(summary.net_profit || 0);
+                    html += buildWeekCard(name, { summary, trades: tradesHtml, netProfit: netProfitWeek });
+                });
+                requestAnimationFrame(() => {
+                    historyDiv.innerHTML = html;
+                    restoreOpenStates();
+                });
+            } catch (e) {
+                showMessage(`History update error: ${e}`, 'error');
+            }
+        }
+        function buildWeekCard(week_name, group) {
+            const summary = group.summary || {};
+            const netProfit = group.netProfit || formatPL(summary.net_profit || 0);
+            const tradesHtml = group.trades || '';
+            return `
+                <div class="expandable-card" data-week="${week_name}">
+                    <div class="expandable-header" onclick="toggleExpandable(this.parentElement)">
+                        <div><strong>${week_name}</strong> | Trades: ${formatInteger(summary.total_trades || 0)} | Win Rate: ${(summary.win_rate || 0).toFixed(1)}% | Net: ${netProfit}</div>
+                        <span>▼</span>
+                    </div>
+                    <div class="expandable-content">
+                        <div class="expandable-content-inner">
+                            <p><strong>Buys:</strong> ${formatInteger(summary.buys || 0)} | <strong>Sells:</strong> ${formatInteger(summary.sells || 0)}</p>
+                            <p><strong>Profitable:</strong> ${formatInteger(summary.profitable || 0)} | <strong>Losses:</strong> ${formatInteger(summary.losses || 0)}</p>
+                            <p><strong>Total Profits:</strong> ${formatPL(summary.total_profits || 0)} | <strong>Total Losses:</strong> ${formatPL(summary.total_losses || 0)}</p>
+                            <div class="trade-list">${tradesHtml}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        // Updated: Use original_type for correct direction display/counts; FIXED: Nairobi TZ for date
+        function buildTradeItem(t) {
+            const profitClass = (parseFloat(t.profit || 0) >= 0) ? 'positive' : 'negative';
+            const profitHtml = `<span class="trade-profit ${profitClass}">${formatPL(t.profit || 0)}</span>`;
+            const volFormatted = formatNumber(t.volume || 0, 2);
+            const typeClass = t.original_type.toLowerCase().includes('buy') ? 'trade-buy' : 'trade-sell';
+            // FIXED: Use Nairobi TZ for date display
+            let serverDate = 'Invalid';
+            const timeDate = new Date(t.time * 1000);
+            if (!isNaN(timeDate.getTime())) {
+                serverDate = timeDate.toLocaleString();
+            }
+            return `
+                <div class="trade-item">
+                    <span>Ticket ${formatInteger(t.ticket)} | <span class="trade-type ${typeClass}">${t.original_type}</span> | Vol ${volFormatted} | ${serverDate}</span>
+                    ${profitHtml}
+                </div>
+            `;
+        }
+        function restoreOpenStates() {
+            const historyDiv = document.getElementById('history-container');
+            const openWeeks = new Set(Array.from(historyDiv.querySelectorAll('.expandable-card.open')).map(card => card.dataset.week));
+            requestAnimationFrame(() => {
+                historyDiv.querySelectorAll('.expandable-card').forEach(card => {
+                    if (openWeeks.has(card.dataset.week)) card.classList.add('open');
+                });
+            });
+        }
+        window.onerror = function(msg, url, line) {
+            fetch('/diagnostics', {
+                method: 'POST',
+                body: JSON.stringify({error: `${msg} at ${url}:${line}`}),
+                headers: {'Content-Type': 'application/json'}
+            });
+        };
+    </script>
+</body>
+</html>
